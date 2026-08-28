@@ -254,7 +254,7 @@ MODEL_PATH = Path(__file__).with_name("Modelo_Dados_Ovinos_IATF.xlsx")
 
 
 # ══════════════════════════════════════════════════════════════════════════
-# FUNÇÕES DE CÁLCULO (lógica original mantida)
+# FUNÇÕES DE CÁLCULO
 # ══════════════════════════════════════════════════════════════════════════
 def norm(x):
     return str(x).strip().casefold()
@@ -423,6 +423,35 @@ def barh_taxa_carneiro(carneiros_cons):
     ax.grid(axis="x", zorder=0)
     for y, v in enumerate(p["Taxa de prenhez (%)"]):
         ax.text(v + 1.5, y, f"{v:.1f}%", va="center", fontweight="bold", color=COR_PRIMARIA)
+    fig.tight_layout()
+    return fig
+
+
+def barras_agrupadas_carneiros_monta():
+    """Gera o gráfico de uso de cada carneiro por monta."""
+    categorias = ["Apolo", "Greek", "Zeus"]
+    monta1 = [1000, 1000, 1000]
+    monta2 = [750, 500, 750]
+    monta3 = [333, 333, 333]
+
+    x = np.arange(len(categorias))
+    width = 0.25
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+
+    ax.bar(x - width, monta1, width, label="Monta 1", color="#1f77b4", edgecolor="none", zorder=3)
+    ax.bar(x, monta2, width, label="Monta 2", color="#2ca02c", edgecolor="none", zorder=3)
+    ax.bar(x + width, monta3, width, label="Monta 3", color="#d62728", edgecolor="none", zorder=3)
+
+    ax.set_title("Uso de cada carneiro por monta")
+    ax.set_ylabel("Nº de montas")
+    ax.set_xticks(x)
+    ax.set_xticklabels(categorias)
+    ax.set_ylim(0, 1000)
+    ax.set_yticks(np.arange(0, 1001, 200))
+    ax.legend(loc="upper right")
+    ax.grid(axis="y", zorder=0)
+
     fig.tight_layout()
     return fig
 
@@ -750,6 +779,13 @@ with tab_carneiros:
         plt.close(fig)
     st.markdown('</div>', unsafe_allow_html=True)
 
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    st.markdown("### Uso de cada carneiro por monta")
+    fig_uso = barras_agrupadas_carneiros_monta()
+    st.pyplot(fig_uso, use_container_width=True)
+    plt.close(fig_uso)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 with tab_vazios:
     st.markdown('<div class="section-card">', unsafe_allow_html=True)
     st.markdown(f"### ⚠️ {len(vazios):,} animais permaneceram vazios ao final")
@@ -798,4 +834,3 @@ st.markdown(
     "</p>",
     unsafe_allow_html=True,
 )
-
