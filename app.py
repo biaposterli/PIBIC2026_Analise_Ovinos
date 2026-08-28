@@ -488,11 +488,9 @@ def gerar_pdf(df, dados):
 
     # ── Capa ──────────────────────────────────────────────────────────
     story.append(Spacer(1, 3.5*cm))
-    story.append(Paragraph("🐑", ParagraphStyle(name="Emoji", alignment=TA_CENTER, fontSize=40)))
     story.append(Spacer(1, 0.4*cm))
     story.append(Paragraph("Relatório de Análise da<br/>Eficiência Reprodutiva de Ovinos", styles["TitleCenter"]))
     story.append(Spacer(1, 0.3*cm))
-    story.append(Paragraph("Programa de Inseminação Artificial em Tempo Fixo (IATF)", styles["Subtitulo"]))
     story.append(Spacer(1, 1.2*cm))
     story.append(HRFlowable(width="60%", thickness=1.2, color=rl_colors.HexColor(COR_DESTAQUE), hAlign="CENTER"))
     story.append(Spacer(1, 1.2*cm))
