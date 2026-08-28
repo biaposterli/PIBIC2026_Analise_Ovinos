@@ -28,22 +28,22 @@ COLUNAS_OBRIGATORIAS = [
     "Ordem",
     "Número de Identificação",
     "Diagnóstico de Gestação Inicial",
-    "Protocolo de IATF_1",
-    "Carneiro_IATF_1",
+    "Estação de monta 1",
+    "Carneiro_monta_1",
     "Diagnóstico de Gestação 1",
-    "Protocolo de IATF_2",
-    "Carneiro_IATF_2",
+    "Estação de monta 2",
+    "Carneiro_monta_2",
     "Diagnóstico de Gestação 2",
-    "Protocolo de IATF_3",
-    "Carneiro_IATF_3",
+    "Estação de monta 3",
+    "Carneiro_monta_3",
     "Diagnóstico de Gestação 3",
     "Diagnóstico de Gestação Final",
 ]
 
-IATFS = [
-    {"rodada": 1, "protocolo": "Protocolo de IATF_1", "carneiro": "Carneiro_IATF_1", "diagnostico": "Diagnóstico de Gestação 1"},
-    {"rodada": 2, "protocolo": "Protocolo de IATF_2", "carneiro": "Carneiro_IATF_2", "diagnostico": "Diagnóstico de Gestação 2"},
-    {"rodada": 3, "protocolo": "Protocolo de IATF_3", "carneiro": "Carneiro_IATF_3", "diagnostico": "Diagnóstico de Gestação 3"},
+ESTACOES = [
+    {"rodada": 1, "estacao": "Estação de monta 1", "carneiro": "Carneiro_monta_1", "diagnostico": "Diagnóstico de Gestação 1"},
+    {"rodada": 2, "estacao": "Estação de monta 2", "carneiro": "Carneiro_monta_2", "diagnostico": "Diagnóstico de Gestação 2"},
+    {"rodada": 3, "estacao": "Estação de monta 3", "carneiro": "Carneiro_monta_3", "diagnostico": "Diagnóstico de Gestação 3"},
 ]
 
 MODEL_PATH = Path(__file__).with_name("Modelo_Dados_Ovinos_IATF.xlsx")
@@ -57,21 +57,21 @@ def validar_colunas(df):
     return [c for c in COLUNAS_OBRIGATORIAS if c not in df.columns]
 
 
-def resumo_iatf(df):
+def resumo_estacoes(df):
     linhas = []
-    for iatf in IATFS:
-        protocolo = iatf["protocolo"]
-        diag = iatf["diagnostico"]
-        mask_protocolo = df[protocolo].notna() & df[protocolo].astype(str).str.strip().ne("")
+    for estacao in ESTACOES:
+        estacao_col = estacao["estacao"]
+        diag = estacao["diagnostico"]
+        mask_estacao = df[estacao_col].notna() & df[estacao_col].astype(str).str.strip().ne("")
         diag_norm = df[diag].map(norm)
-        validos = mask_protocolo & diag_norm.isin(["prenhe", "vazia"])
-        prenhes = (mask_protocolo & (diag_norm == "prenhe")).sum()
-        vazias = (mask_protocolo & (diag_norm == "vazia")).sum()
-        submetidos = mask_protocolo.sum()
+        validos = mask_estacao & diag_norm.isin(["prenhe", "vazia"])
+        prenhes = (mask_estacao & (diag_norm == "prenhe")).sum()
+        vazias = (mask_estacao & (diag_norm == "vazia")).sum()
+        submetidos = mask_estacao.sum()
         n_validos = validos.sum()
         taxa = prenhes / n_validos * 100 if n_validos else np.nan
         linhas.append({
-            "IATF": f"IATF {iatf['rodada']}",
+            "Estação de Monta": f"Estação de Monta {estacao['rodada']}",
             "Animais submetidos": int(submetidos),
             "Diagnósticos válidos": int(n_validos),
             "Prenhes": int(prenhes),
@@ -81,32 +81,40 @@ def resumo_iatf(df):
     return pd.DataFrame(linhas)
 
 
-def diagnostico_tabela(df, coluna):
-    s = df[coluna].copy()
+def diagnostico_tabela(df, coluna, protocolo_col=None):
+    if protocolo_col and protocolo_col in df.columns:
+        # Filtra apenas os animais que realmente participaram desta rodada/protocolo
+        mask = df[protocolo_col].notna() & df[protocolo_col].astype(str).str.strip().ne("")
+        s = df.loc[mask, coluna].copy()
+    else:
+        s = df[coluna].copy()
+        
     s = s.where(s.notna(), "Não informado")
     s = s.astype(str).str.strip()
     c = s.value_counts()
+    
+    total_validos = len(s) if len(s) > 0 else 1
     out = pd.DataFrame({"Diagnóstico": c.index, "N": c.values})
-    out["%"] = (out["N"] / len(df) * 100).round(2)
+    out["%"] = (out["N"] / total_validos * 100).round(2)
     return out
 
 
 def carneiros(df):
     nomes = set()
-    por_iatf = {}
-    for iatf in IATFS:
-        s = df[iatf["carneiro"]].dropna().astype(str).str.strip()
+    por_estacao = {}
+    for estacao in ESTACOES:
+        s = df[estacao["carneiro"]].dropna().astype(str).str.strip()
         s = s[s.ne("")]
         vals = sorted(s.unique().tolist())
-        por_iatf[iatf["rodada"]] = vals
+        por_estacao[estacao["rodada"]] = vals
         nomes.update(vals)
-    return sorted(nomes), por_iatf
+    return sorted(nomes), por_estacao
 
 
-def taxa_carneiro(df, iatf):
-    p = iatf["protocolo"]
-    c = iatf["carneiro"]
-    d = iatf["diagnostico"]
+def taxa_carneiro(df, estacao):
+    p = estacao["estacao"]
+    c = estacao["carneiro"]
+    d = estacao["diagnostico"]
     mask = (
         df[p].notna() &
         df[p].astype(str).str.strip().ne("") &
@@ -134,10 +142,10 @@ def taxa_carneiro(df, iatf):
 
 def consolidado_carneiros(df):
     partes = []
-    for iatf in IATFS:
-        t = taxa_carneiro(df, iatf)
+    for estacao in ESTACOES:
+        t = taxa_carneiro(df, estacao)
         if not t.empty:
-            t["IATF"] = iatf["rodada"]
+            t["Estação de Monta"] = estacao["rodada"]
             partes.append(t)
     if not partes:
         return pd.DataFrame()
@@ -149,7 +157,7 @@ def consolidado_carneiros(df):
                 "Animais avaliados": ("Animais avaliados", "sum"),
                 "Prenhes": ("Prenhes", "sum"),
                 "Vazias": ("Vazias", "sum"),
-                "Nº de IATFs utilizadas": ("IATF", "nunique"),
+                "Nº de Estações de Monta utilizadas": ("Estação de Monta", "nunique"),
             }
         )
     )
@@ -214,16 +222,16 @@ def gerar_pdf(df, dados):
     ))
     story.append(Spacer(1, 0.4*cm))
 
-    story.append(Paragraph("1. Resultados por IATF", styles["Heading2"]))
-    story.append(tabela_pdf(dados["tabela_iatf"]))
+    story.append(Paragraph("1. Resultados por Estação de Monta", styles["Heading2"]))
+    story.append(tabela_pdf(dados["tabela_estacoes"]))
     story.append(Spacer(1, 0.3*cm))
 
-    for iatf in IATFS:
+    for estacao in ESTACOES:
         fig = pie_figure(
-            [dados["tabela_iatf"].loc[iatf["rodada"]-1, "Prenhes"],
-             dados["tabela_iatf"].loc[iatf["rodada"]-1, "Vazias"]],
+            [dados["tabela_estacoes"].loc[estacao["rodada"]-1, "Prenhes"],
+             dados["tabela_estacoes"].loc[estacao["rodada"]-1, "Vazias"]],
             ["Prenhe", "Vazia"],
-            f"Prenhe x Vazia — IATF {iatf['rodada']}"
+            f"Prenhe x Vazia — Estação de Monta {estacao['rodada']}"
         )
         story.append(RLImage(fig_to_png(fig), width=10.5*cm, height=9.4*cm))
 
@@ -302,7 +310,7 @@ if faltantes:
     st.stop()
 
 # Cálculos
-t_iatf = resumo_iatf(df)
+t_estacoes = resumo_estacoes(df)
 dg_final = df["Diagnóstico de Gestação Final"].map(norm)
 n_prenhes_final = int((dg_final == "prenhe").sum())
 n_vazias_final = int((dg_final == "vazia").sum())
@@ -319,7 +327,7 @@ resumo_final = pd.DataFrame({
 })
 resumo_final["% do total"] = (resumo_final["N"] / len(df) * 100).round(2)
 
-todos_carneiros, carneiros_por_iatf = carneiros(df)
+todos_carneiros, carneiros_por_estacao = carneiros(df)
 carneiros_cons = consolidado_carneiros(df)
 
 vazios = df.loc[dg_final == "vazia"].copy()
@@ -327,7 +335,7 @@ cols_resumidas = [c for c in ["Ordem", "Número de Identificação", "Diagnósti
 vazios_resumida = vazios[cols_resumidas].reset_index(drop=True)
 
 dados = {
-    "tabela_iatf": t_iatf,
+    "tabela_estacoes": t_estacoes,
     "resumo_final": resumo_final,
     "carneiros": todos_carneiros,
     "carneiros_consolidado": carneiros_cons,
@@ -346,35 +354,41 @@ m2.metric("🐏 Carneiros", f"{len(todos_carneiros):,}")
 m3.metric("📈 Prenhez final", f"{taxa_final:.2f}%")
 m4.metric("⚠️ Vazias finais", f"{n_vazias_final:,}")
 
-st.markdown("### 📈 Taxa de prenhez por IATF")
-st.dataframe(t_iatf, use_container_width=True, hide_index=True)
+st.markdown("### 📈 Taxa de prenhez por Estação de Monta")
+st.dataframe(t_estacoes, use_container_width=True, hide_index=True)
 
 fig, ax = plt.subplots(figsize=(9, 4.5))
-ax.bar(t_iatf["IATF"], t_iatf["Taxa de prenhez (%)"])
+ax.bar(t_estacoes["Estação de Monta"], t_estacoes["Taxa de prenhez (%)"])
 ax.set_ylim(0, 100)
 ax.set_ylabel("Taxa de prenhez (%)")
-ax.set_title("Taxa de prenhez por IATF")
-for i, v in enumerate(t_iatf["Taxa de prenhez (%)"]):
+ax.set_title("Taxa de prenhez por Estação de Monta")
+for i, v in enumerate(t_estacoes["Taxa de prenhez (%)"]):
     if pd.notna(v):
         ax.text(i, v + 1, f"{v:.1f}%", ha="center")
 fig.tight_layout()
 st.pyplot(fig, use_container_width=True)
 plt.close(fig)
 
-st.markdown("### 🥧 Prenhe × Vazia por IATF")
+st.markdown("### 🥧 Prenhe × Vazia por Estação de Monta")
 cols = st.columns(3)
-for idx, iatf in enumerate(IATFS):
-    row = t_iatf.iloc[idx]
-    fig = pie_figure([row["Prenhes"], row["Vazias"]], ["Prenhe", "Vazia"], f"IATF {iatf['rodada']}")
+for idx, estacao in enumerate(ESTACOES):
+    row = t_estacoes.iloc[idx]
+    fig = pie_figure([row["Prenhes"], row["Vazias"]], ["Prenhe", "Vazia"], f"Estação de Monta {estacao['rodada']}")
     cols[idx].pyplot(fig, use_container_width=True)
     plt.close(fig)
 
 st.markdown("### 🩺 Diagnóstico de gestação")
-for coluna in ["Diagnóstico de Gestação Inicial", "Diagnóstico de Gestação 1",
-               "Diagnóstico de Gestação 2", "Diagnóstico de Gestação 3",
-               "Diagnóstico de Gestação Final"]:
+mapeamento_protocolos = {
+    "Diagnóstico de Gestação Inicial": None,
+    "Diagnóstico de Gestação 1": "Estação de monta 1",
+    "Diagnóstico de Gestação 2": "Estação de monta 2",
+    "Diagnóstico de Gestação 3": "Estação de monta 3",
+    "Diagnóstico de Gestação Final": None,
+}
+
+for coluna, prot_col in mapeamento_protocolos.items():
     with st.expander(coluna):
-        tab = diagnostico_tabela(df, coluna)
+        tab = diagnostico_tabela(df, coluna, protocolo_col=prot_col)
         st.dataframe(tab, use_container_width=True, hide_index=True)
         fig = pie_figure(tab["N"], tab["Diagnóstico"], coluna)
         st.pyplot(fig, use_container_width=True)
@@ -397,8 +411,8 @@ else:
     st.pyplot(fig, use_container_width=True)
     plt.close(fig)
 
-st.markdown("### 🧪 Prenhez por protocolo/IATF")
-st.dataframe(t_iatf, use_container_width=True, hide_index=True)
+st.markdown("### 🧪 Prenhez por Estação de Monta")
+st.dataframe(t_estacoes, use_container_width=True, hide_index=True)
 
 st.markdown("### 🥧 Diagnóstico final")
 st.dataframe(resumo_final, use_container_width=True, hide_index=True)
@@ -417,7 +431,7 @@ st.dataframe(vazios_resumida, use_container_width=True, hide_index=True)
 st.markdown("## 📥 Downloads")
 excel_buffer = io.BytesIO()
 with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
-    t_iatf.to_excel(writer, sheet_name="Resumo IATF", index=False)
+    t_estacoes.to_excel(writer, sheet_name="Resumo Estações", index=False)
     resumo_final.to_excel(writer, sheet_name="Diagnostico Final", index=False)
     carneiros_cons.to_excel(writer, sheet_name="Carneiros", index=False)
     vazios.to_excel(writer, sheet_name="Animais Vazios", index=False)
