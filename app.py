@@ -28,16 +28,19 @@ st.set_page_config(
 )
 
 # ── Paleta de cores institucional ───────────────────────────────────────
-COR_PRIMARIA      = "#20463B"   # verde profundo (marca)
-COR_PRIMARIA_CLARA= "#3D7A5F"   # verde médio
-COR_SECUNDARIA    = "#8FB996"   # verde suave
-COR_DESTAQUE      = "#C99A4A"   # dourado/terracota (acento)
-COR_ALERTA        = "#B7472A"   # terracota escuro (vazias)
-COR_NEUTRA_1      = "#5B6B63"   # cinza esverdeado
-COR_NEUTRA_2      = "#A9B4AD"   # cinza claro
-COR_FUNDO         = "#F5F7F3"   # fundo geral
+# Paleta "caderno de campo": tons de pastagem e terra, com dourado de
+# etiqueta de identificação animal como acento — evita o par clichê
+# creme + terracota comum em interfaces geradas por IA.
+COR_PRIMARIA      = "#1E3A2F"   # verde-tinta profundo (identidade)
+COR_PRIMARIA_CLARA= "#4B7A5E"   # verde musgo
+COR_SECUNDARIA    = "#A9C2AC"   # verde salva claro
+COR_DESTAQUE      = "#C08A2E"   # dourado de etiqueta (acento)
+COR_ALERTA        = "#9C4A2E"   # argila escura (vazias)
+COR_NEUTRA_1      = "#57645B"   # cinza-ardósia esverdeado
+COR_NEUTRA_2      = "#D8DCD3"   # cinza-pedra claro (linhas/bordas)
+COR_FUNDO         = "#F1F3EE"   # fundo geral (pedra clara)
 COR_CARD          = "#FFFFFF"
-COR_TEXTO         = "#1F2A24"
+COR_TEXTO         = "#16211B"   # tinta quase preta
 
 PALETA_CATEGORICA = [COR_PRIMARIA_CLARA, COR_ALERTA, COR_DESTAQUE, COR_NEUTRA_1, COR_SECUNDARIA, COR_NEUTRA_2]
 
@@ -47,6 +50,7 @@ MAPA_CORES_FIXAS = {
     "não informado": COR_NEUTRA_2,
     "nao informado": COR_NEUTRA_2,
 }
+
 
 
 def cores_para_labels(labels):
@@ -80,7 +84,7 @@ def estilo_matplotlib():
         "font.size": 10,
         "axes.spines.top": False,
         "axes.spines.right": False,
-        "grid.color": "#E4E8E2",
+        "grid.color": COR_NEUTRA_2,
         "grid.linewidth": 0.8,
         "font.family": "sans-serif",
     })
@@ -89,75 +93,104 @@ def estilo_matplotlib():
 estilo_matplotlib()
 
 # ══════════════════════════════════════════════════════════════════════════
-# CSS CUSTOMIZADO — visual profissional
+# CSS CUSTOMIZADO — identidade "caderno de campo"
 # ══════════════════════════════════════════════════════════════════════════
 st.markdown(f"""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+    html, body, [class*="css"] {{
+        font-family: 'IBM Plex Sans', sans-serif;
+    }}
+
     .stApp {{
         background-color: {COR_FUNDO};
     }}
     .block-container {{
-        padding-top: 1.5rem;
+        padding-top: 1.4rem;
         padding-bottom: 3rem;
-        max-width: 1200px;
+        max-width: 1180px;
     }}
 
-    /* ── Cabeçalho ── */
-    .app-header {{
-        background: linear-gradient(135deg, {COR_PRIMARIA} 0%, {COR_PRIMARIA_CLARA} 100%);
-        padding: 2rem 2.2rem;
-        border-radius: 14px;
-        margin-bottom: 1.6rem;
-        box-shadow: 0 4px 18px rgba(32, 70, 59, 0.25);
+    /* ── Masthead — folha de rosto do relatório, ecoa a capa do PDF ── */
+    .masthead {{
+        padding: 0.4rem 0 1.6rem 0;
+        margin-bottom: 1.8rem;
+        border-bottom: 2px solid {COR_PRIMARIA};
     }}
-    .app-header h1 {{
-        color: #FFFFFF;
-        font-size: 1.9rem;
-        font-weight: 700;
-        margin: 0 0 0.35rem 0;
+    .masthead-tag {{
+        display: inline-block;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.8rem;
+        color: {COR_PRIMARIA_CLARA};
+        letter-spacing: 0.02em;
+        margin-bottom: 0.6rem;
     }}
-    .app-header p {{
-        color: #E4EFE7;
-        font-size: 1rem;
+    .masthead h1 {{
+        font-family: 'Newsreader', serif;
+        font-weight: 600;
+        font-style: italic;
+        color: {COR_TEXTO};
+        font-size: 2.4rem;
+        line-height: 1.15;
+        margin: 0 0 0.5rem 0;
+    }}
+    .masthead p {{
+        color: {COR_NEUTRA_1};
+        font-size: 1.02rem;
+        max-width: 46rem;
         margin: 0;
     }}
 
-    /* ── Cartões de seção ── */
+    /* ── Tira de indicadores (substitui cartões repetidos) ── */
+    .kpi-strip {{
+        display: flex;
+        flex-wrap: wrap;
+        background: {COR_CARD};
+        border: 1px solid {COR_NEUTRA_2};
+        border-radius: 4px;
+        margin-bottom: 1.8rem;
+        overflow: hidden;
+    }}
+    .kpi-item {{
+        flex: 1 1 0;
+        min-width: 9rem;
+        padding: 1rem 1.3rem;
+        border-right: 1px solid {COR_NEUTRA_2};
+    }}
+    .kpi-item:last-child {{ border-right: none; }}
+    .kpi-label {{
+        display: block;
+        font-size: 0.82rem;
+        color: {COR_NEUTRA_1};
+        margin-bottom: 0.3rem;
+    }}
+    .kpi-value {{
+        display: block;
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 600;
+        font-size: 1.85rem;
+        color: {COR_PRIMARIA};
+    }}
+    .kpi-item.kpi-alert .kpi-value {{ color: {COR_ALERTA}; }}
+
+    /* ── Seções: friso superior no lugar de caixa com sombra ── */
     .section-card {{
         background: {COR_CARD};
-        border-radius: 12px;
-        padding: 1.4rem 1.6rem;
-        margin-bottom: 1.2rem;
-        border: 1px solid #E7EBE4;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        border-top: 2px solid {COR_DESTAQUE};
+        padding: 1.3rem 1.5rem 1.4rem 1.5rem;
+        margin-bottom: 1.3rem;
     }}
 
     h2, h3 {{
-        color: {COR_PRIMARIA} !important;
-        font-weight: 700 !important;
+        font-family: 'Newsreader', serif;
+        color: {COR_TEXTO} !important;
+        font-weight: 600 !important;
     }}
     h3 {{
-        font-size: 1.15rem !important;
-        border-left: 5px solid {COR_DESTAQUE};
-        padding-left: 0.6rem;
-        margin-top: 0.4rem !important;
-    }}
-
-    /* ── Métricas (KPIs) ── */
-    div[data-testid="stMetric"] {{
-        background: {COR_CARD};
-        border: 1px solid #E7EBE4;
-        border-top: 4px solid {COR_PRIMARIA_CLARA};
-        border-radius: 12px;
-        padding: 0.9rem 1rem 0.7rem 1rem;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-    }}
-    div[data-testid="stMetricLabel"] {{
-        color: {COR_NEUTRA_1};
-        font-weight: 600;
-    }}
-    div[data-testid="stMetricValue"] {{
-        color: {COR_PRIMARIA};
+        font-size: 1.28rem !important;
+        margin-top: 0.1rem !important;
+        margin-bottom: 0.9rem !important;
     }}
 
     /* ── Botões ── */
@@ -165,62 +198,72 @@ st.markdown(f"""
         background-color: {COR_PRIMARIA};
         color: white;
         border: none;
-        border-radius: 8px;
-        font-weight: 600;
-        padding: 0.55rem 1rem;
+        border-radius: 4px;
+        font-weight: 500;
+        padding: 0.55rem 1.1rem;
         transition: background-color 0.15s ease-in-out;
     }}
     .stButton>button:hover, .stDownloadButton>button:hover {{
         background-color: {COR_PRIMARIA_CLARA};
         color: white;
     }}
+    .stButton>button:focus-visible, .stDownloadButton>button:focus-visible {{
+        outline: 2px solid {COR_DESTAQUE};
+        outline-offset: 2px;
+    }}
 
     /* ── Abas ── */
     .stTabs [data-baseweb="tab-list"] {{
-        gap: 4px;
-        border-bottom: 2px solid #E7EBE4;
+        gap: 1.6rem;
+        border-bottom: 1px solid {COR_NEUTRA_2};
     }}
     .stTabs [data-baseweb="tab"] {{
         background-color: transparent;
-        border-radius: 8px 8px 0 0;
-        padding: 0.55rem 1.1rem;
+        padding: 0.5rem 0.1rem;
         color: {COR_NEUTRA_1};
-        font-weight: 600;
+        font-weight: 500;
     }}
     .stTabs [aria-selected="true"] {{
-        background-color: {COR_CARD};
         color: {COR_PRIMARIA} !important;
-        border: 1px solid #E7EBE4;
-        border-bottom: 2px solid {COR_CARD};
+        border-bottom: 2px solid {COR_DESTAQUE};
+        font-weight: 600;
     }}
 
     /* ── Expanders ── */
     .streamlit-expanderHeader {{
-        background-color: #F0F3EE;
-        border-radius: 8px;
-        font-weight: 600;
-        color: {COR_PRIMARIA};
+        background-color: transparent;
+        border-bottom: 1px solid {COR_NEUTRA_2};
+        border-radius: 0;
+        font-weight: 500;
+        color: {COR_TEXTO};
     }}
 
     /* ── Dataframes ── */
     div[data-testid="stDataFrame"] {{
-        border-radius: 10px;
+        border-radius: 4px;
         overflow: hidden;
-        border: 1px solid #E7EBE4;
+        border: 1px solid {COR_NEUTRA_2};
     }}
 
     /* ── Sidebar ── */
     section[data-testid="stSidebar"] {{
         background-color: #FFFFFF;
-        border-right: 1px solid #E7EBE4;
+        border-right: 1px solid {COR_NEUTRA_2};
     }}
     section[data-testid="stSidebar"] h2 {{
-        font-size: 1.05rem !important;
+        font-family: 'Newsreader', serif;
+        font-size: 1.15rem !important;
     }}
 
     /* Alertas */
     div[data-testid="stAlert"] {{
-        border-radius: 10px;
+        border-radius: 4px;
+    }}
+
+    /* Foco visível para navegação por teclado */
+    a:focus-visible, button:focus-visible, [tabindex]:focus-visible {{
+        outline: 2px solid {COR_DESTAQUE};
+        outline-offset: 2px;
     }}
 
     footer {{visibility: hidden;}}
@@ -541,17 +584,21 @@ def gerar_pdf(df, dados):
     doc = SimpleDocTemplate(buf, pagesize=A4, rightMargin=1.6*cm, leftMargin=1.6*cm,
                              topMargin=1.5*cm, bottomMargin=1.5*cm)
     styles = getSampleStyleSheet()
+    # Times (fonte base do PDF, sem necessidade de embutir arquivos) para os
+    # títulos — a mesma dupla serifada/sem serifa usada na tela do app.
     styles.add(ParagraphStyle(name="TitleCenter", parent=styles["Title"], alignment=TA_CENTER,
-                               textColor=rl_colors.HexColor(COR_PRIMARIA), fontSize=22))
+                               textColor=rl_colors.HexColor(COR_PRIMARIA), fontSize=23,
+                               fontName="Times-BoldItalic", leading=27))
     styles.add(ParagraphStyle(name="Subtitulo", parent=styles["BodyText"], alignment=TA_CENTER,
                                textColor=rl_colors.HexColor(COR_NEUTRA_1), fontSize=11))
     styles.add(ParagraphStyle(name="SecaoTitulo", parent=styles["Heading2"],
-                               textColor=rl_colors.HexColor(COR_PRIMARIA), fontSize=14,
-                               spaceBefore=6, spaceAfter=4))
+                               textColor=rl_colors.HexColor(COR_TEXTO), fontSize=14,
+                               fontName="Times-Bold", spaceBefore=6, spaceAfter=4))
     styles.add(ParagraphStyle(name="CorpoTexto", parent=styles["BodyText"],
                                textColor=rl_colors.HexColor(COR_TEXTO), fontSize=10, leading=15))
     styles.add(ParagraphStyle(name="Rodape", parent=styles["BodyText"], alignment=TA_LEFT,
                                textColor=rl_colors.HexColor(COR_NEUTRA_1), fontSize=8))
+
 
     story = []
 
@@ -651,9 +698,10 @@ def gerar_pdf(df, dados):
 # INTERFACE — CABEÇALHO
 # ══════════════════════════════════════════════════════════════════════════
 st.markdown("""
-<div class="app-header">
-    <h1>🐑 Análise Reprodutiva de Ovinos</h1>
-    <p>Envie a planilha preenchida e receba automaticamente indicadores, gráficos e o relatório final em PDF.</p>
+<div class="masthead">
+    <span class="masthead-tag">🐑 Protocolo de IATF</span>
+    <h1>Análise Reprodutiva de Ovinos</h1>
+    <p>Envie a planilha preenchida para obter indicadores, gráficos e o relatório final em PDF.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -744,15 +792,27 @@ dados = {
 st.success(f"✅ Planilha analisada com sucesso: **{len(df):,}** animais processados.")
 
 # ══════════════════════════════════════════════════════════════════════════
-# KPIs
+# KPIs — tira de indicadores no lugar de cartões repetidos
 # ══════════════════════════════════════════════════════════════════════════
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("🐑 Animais", f"{len(df):,}")
-m2.metric("🐏 Carneiros", f"{len(todos_carneiros):,}")
-m3.metric("📈 Prenhez final", f"{taxa_final:.2f}%")
-m4.metric("⚠️ Vazias finais", f"{n_vazias_final:,}")
+def _fmt_int(n):
+    return f"{n:,}".replace(",", ".")
 
-st.markdown("<br>", unsafe_allow_html=True)
+
+kpis = [
+    ("Animais analisados", _fmt_int(len(df)), False),
+    ("Carneiros distintos", _fmt_int(len(todos_carneiros)), False),
+    ("Prenhez final", f"{taxa_final:.1f}%", False),
+    ("Vazias ao final", _fmt_int(n_vazias_final), n_vazias_final > 0),
+]
+kpi_html = '<div class="kpi-strip">' + "".join(
+    f'<div class="kpi-item{" kpi-alert" if alerta else ""}">'
+    f'<span class="kpi-label">{label}</span>'
+    f'<span class="kpi-value">{valor}</span>'
+    f'</div>'
+    for label, valor, alerta in kpis
+) + '</div>'
+st.markdown(kpi_html, unsafe_allow_html=True)
+
 
 # ══════════════════════════════════════════════════════════════════════════
 # ABAS DE CONTEÚDO
