@@ -440,7 +440,28 @@ st.markdown(f"""
 
     footer {{visibility: hidden;}}
     #MainMenu {{visibility: hidden;}}
-    header[data-testid="stHeader"] {{visibility: hidden; height: 0;}}
+
+    /* O cabeçalho padrão do Streamlit é ocultado (menu "hambúrguer" e botão
+       "Deploy" não fazem sentido neste app), mas o botão que reabre a barra
+       lateral quando ela está recolhida ("stExpandSidebarButton") mora
+       dentro desse mesmo cabeçalho — por isso ele precisa continuar
+       visível e clicável mesmo com o cabeçalho escondido. */
+    header[data-testid="stHeader"] {{
+        visibility: hidden;
+        height: 0;
+        overflow: visible;
+    }}
+    header[data-testid="stHeader"] [data-testid="stExpandSidebarButton"] {{
+        visibility: visible !important;
+        position: fixed;
+        top: 0.7rem;
+        left: 0.7rem;
+        z-index: 999999;
+        background: {COR_CARD};
+        border: 1px solid {COR_NEUTRA_2};
+        border-radius: 8px;
+        box-shadow: 0 4px 12px -4px #10191540;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
