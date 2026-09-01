@@ -118,14 +118,6 @@ st.markdown(f"""
         margin-bottom: 1.8rem;
         border-bottom: 2px solid {COR_PRIMARIA};
     }}
-    .masthead-tag {{
-        display: inline-block;
-        font-family: 'IBM Plex Sans', sans-serif;
-        font-weight: 500;
-        font-size: 0.95rem;
-        color: {COR_PRIMARIA};
-        margin-bottom: 0.7rem;
-    }}
     .masthead h1 {{
         font-family: 'Newsreader', serif;
         font-weight: 600;
@@ -177,7 +169,7 @@ st.markdown(f"""
     /* ── Seções: friso superior no lugar de caixa com sombra ── */
     .section-card {{
         border-top: 2px solid {COR_DESTAQUE};
-        padding: 1.2rem 0 1.4rem 0;
+        padding: 0.5rem 0 1.4rem 0;
         margin-bottom: 1.3rem;
     }}
 
@@ -226,6 +218,9 @@ st.markdown(f"""
         color: {COR_PRIMARIA} !important;
         border-bottom: 2px solid {COR_DESTAQUE};
         font-weight: 600;
+    }}
+    .stTabs [data-baseweb="tab-panel"] {{
+        padding-top: 0.6rem;
     }}
 
     /* ── Expanders ── */
@@ -699,7 +694,6 @@ def gerar_pdf(df, dados):
 # ══════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="masthead">
-    <span class="masthead-tag">🐑 Protocolo de IATF</span>
     <h1>Análise Reprodutiva de Ovinos</h1>
     <p>Envie a planilha preenchida para obter indicadores, gráficos e o relatório final em PDF.</p>
 </div>
