@@ -1,10 +1,10 @@
 import io
+from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 import streamlit as st
 
 from reportlab.lib import colors as rl_colors
@@ -228,6 +228,17 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
+
+@contextmanager
+def section_card():
+    """Envolve um bloco de conteúdo no cartão de seção estilizado, evitando
+    repetir os mesmos dois `st.markdown` em cada trecho da interface."""
+    st.markdown('<div class="section-card">', unsafe_allow_html=True)
+    try:
+        yield
+    finally:
+        st.markdown('</div>', unsafe_allow_html=True)
+
 COLUNAS_OBRIGATORIAS = [
     "Ordem",
     "Número de Identificação",
@@ -264,6 +275,7 @@ def validar_colunas(df):
     return [c for c in COLUNAS_OBRIGATORIAS if c not in df.columns]
 
 
+@st.cache_data(show_spinner=False)
 def resumo_estacoes(df):
     linhas = []
     for estacao in ESTACOES:
@@ -305,6 +317,7 @@ def diagnostico_tabela(df, coluna, protocolo_col=None):
     return out
 
 
+@st.cache_data(show_spinner=False)
 def carneiros(df):
     nomes = set()
     por_estacao = {}
@@ -346,6 +359,7 @@ def taxa_carneiro(df, estacao):
     return pd.DataFrame(rows)
 
 
+@st.cache_data(show_spinner=False)
 def consolidado_carneiros(df):
     partes = []
     for estacao in ESTACOES:
@@ -427,28 +441,54 @@ def barh_taxa_carneiro(carneiros_cons):
     return fig
 
 
-def barras_agrupadas_carneiros_monta():
-    """Gera o gráfico de uso de cada carneiro por monta."""
-    categorias = ["Apolo", "Greek", "Zeus"]
-    monta1 = [1000, 1000, 1000]
-    monta2 = [750, 500, 750]
-    monta3 = [333, 333, 333]
+@st.cache_data(show_spinner=False)
+def contagem_uso_carneiros(df):
+    """Conta quantas fêmeas cada carneiro cobriu em cada estação de monta.
 
-    x = np.arange(len(categorias))
-    width = 0.25
+    Retorna a lista de nomes de carneiros (ordenada) e um dicionário
+    {rodada: pandas.Series(nome_do_carneiro -> contagem)}.
+    """
+    contagens = {}
+    nomes = set()
+    for estacao in ESTACOES:
+        s = df[estacao["carneiro"]].dropna().astype(str).str.strip()
+        s = s[s.ne("")]
+        contagens[estacao["rodada"]] = s.value_counts()
+        nomes.update(s.unique().tolist())
+    return sorted(nomes), contagens
 
-    fig, ax = plt.subplots(figsize=(9, 5))
 
-    ax.bar(x - width, monta1, width, label="Monta 1", color="#1f77b4", edgecolor="none", zorder=3)
-    ax.bar(x, monta2, width, label="Monta 2", color="#2ca02c", edgecolor="none", zorder=3)
-    ax.bar(x + width, monta3, width, label="Monta 3", color="#d62728", edgecolor="none", zorder=3)
+def barras_agrupadas_carneiros_monta(nomes, contagens):
+    """Gera o gráfico de uso de cada carneiro por monta, a partir dos dados
+    reais enviados na planilha (nomes/contagens vindos de `contagem_uso_carneiros`)."""
+    if not nomes:
+        fig, ax = plt.subplots(figsize=(9, 3))
+        ax.text(0.5, 0.5, "Sem dados de carneiros para exibir", ha="center", va="center", color=COR_NEUTRA_1)
+        ax.axis("off")
+        return fig
+
+    x = np.arange(len(nomes))
+    n_estacoes = len(ESTACOES)
+    width = 0.8 / n_estacoes
+    cores_monta = ["#1f77b4", "#2ca02c", "#d62728"]
+
+    fig, ax = plt.subplots(figsize=(max(9, len(nomes) * 1.1), 5))
+
+    valor_max = 1
+    for i, estacao in enumerate(ESTACOES):
+        rodada = estacao["rodada"]
+        serie = contagens.get(rodada, pd.Series(dtype=int))
+        valores = [int(serie.get(nome, 0)) for nome in nomes]
+        valor_max = max(valor_max, max(valores, default=0))
+        offset = (i - (n_estacoes - 1) / 2) * width
+        cor = cores_monta[i % len(cores_monta)]
+        ax.bar(x + offset, valores, width, label=f"Monta {rodada}", color=cor, edgecolor="none", zorder=3)
 
     ax.set_title("Uso de cada carneiro por monta")
-    ax.set_ylabel("Nº de montas")
+    ax.set_ylabel("Nº de fêmeas cobertas")
     ax.set_xticks(x)
-    ax.set_xticklabels(categorias)
-    ax.set_ylim(0, 1000)
-    ax.set_yticks(np.arange(0, 1001, 200))
+    ax.set_xticklabels(nomes, rotation=30, ha="right")
+    ax.set_ylim(0, valor_max * 1.2)
     ax.legend(loc="upper right")
     ax.grid(axis="y", zorder=0)
 
@@ -548,10 +588,11 @@ def gerar_pdf(df, dados):
     story.append(tabela_pdf(dados["tabela_estacoes"]))
     story.append(Spacer(1, 0.4*cm))
 
-    for estacao in ESTACOES:
+    # `zip` casa cada linha de `tabela_estacoes` com a estação correspondente
+    # em ESTACOES — mais claro e seguro do que indexar por `rodada - 1`.
+    for estacao, row in zip(ESTACOES, dados["tabela_estacoes"].to_dict("records")):
         fig = pie_figure(
-            [dados["tabela_estacoes"].loc[estacao["rodada"]-1, "Prenhes"],
-             dados["tabela_estacoes"].loc[estacao["rodada"]-1, "Vazias"]],
+            [row["Prenhes"], row["Vazias"]],
             ["Prenhe", "Vazia"],
             f"Prenhe x Vazia — Estação de Monta {estacao['rodada']}"
         )
@@ -721,112 +762,109 @@ tab_geral, tab_diag, tab_carneiros, tab_vazios, tab_export = st.tabs(
 )
 
 with tab_geral:
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("### Taxa de prenhez por Estação de Monta")
-    st.dataframe(t_estacoes, use_container_width=True, hide_index=True)
-    fig = barras_taxa_estacao(t_estacoes)
-    st.pyplot(fig, use_container_width=True)
-    plt.close(fig)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("### Prenhe × Vazia por Estação de Monta")
-    cols = st.columns(3)
-    for idx, estacao in enumerate(ESTACOES):
-        row = t_estacoes.iloc[idx]
-        fig = pie_figure([row["Prenhes"], row["Vazias"]], ["Prenhe", "Vazia"], f"Estação de Monta {estacao['rodada']}")
-        cols[idx].pyplot(fig, use_container_width=True)
+    with section_card():
+        st.markdown("### Taxa de prenhez por Estação de Monta")
+        st.dataframe(t_estacoes, use_container_width=True, hide_index=True)
+        fig = barras_taxa_estacao(t_estacoes)
+        st.pyplot(fig, use_container_width=True)
         plt.close(fig)
-    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("### Diagnóstico de gestação final")
-    st.dataframe(resumo_final, use_container_width=True, hide_index=True)
-    fig = pie_figure(resumo_final["N"], resumo_final["Resultado"], "Diagnóstico de gestação final")
-    st.pyplot(fig, use_container_width=True)
-    plt.close(fig)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with section_card():
+        st.markdown("### Prenhe × Vazia por Estação de Monta")
+        cols = st.columns(3)
+        for idx, estacao in enumerate(ESTACOES):
+            row = t_estacoes.iloc[idx]
+            fig = pie_figure([row["Prenhes"], row["Vazias"]], ["Prenhe", "Vazia"], f"Estação de Monta {estacao['rodada']}")
+            cols[idx].pyplot(fig, use_container_width=True)
+            plt.close(fig)
+
+    with section_card():
+        st.markdown("### Diagnóstico de gestação final")
+        st.dataframe(resumo_final, use_container_width=True, hide_index=True)
+        fig = pie_figure(resumo_final["N"], resumo_final["Resultado"], "Diagnóstico de gestação final")
+        st.pyplot(fig, use_container_width=True)
+        plt.close(fig)
 
 with tab_diag:
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("### Diagnósticos de gestação por etapa")
-    mapeamento_protocolos = {
-        "Diagnóstico de Gestação Inicial": None,
-        "Diagnóstico de Gestação 1": "Estação de monta 1",
-        "Diagnóstico de Gestação 2": "Estação de monta 2",
-        "Diagnóstico de Gestação 3": "Estação de monta 3",
-        "Diagnóstico de Gestação Final": None,
-    }
-    for coluna, prot_col in mapeamento_protocolos.items():
-        with st.expander(coluna):
-            tab_dados = diagnostico_tabela(df, coluna, protocolo_col=prot_col)
-            c1, c2 = st.columns([1, 1])
-            c1.dataframe(tab_dados, use_container_width=True, hide_index=True)
-            fig = pie_figure(tab_dados["N"], tab_dados["Diagnóstico"], coluna)
-            c2.pyplot(fig, use_container_width=True)
+    with section_card():
+        st.markdown("### Diagnósticos de gestação por etapa")
+        mapeamento_protocolos = {
+            "Diagnóstico de Gestação Inicial": None,
+            "Diagnóstico de Gestação 1": "Estação de monta 1",
+            "Diagnóstico de Gestação 2": "Estação de monta 2",
+            "Diagnóstico de Gestação 3": "Estação de monta 3",
+            "Diagnóstico de Gestação Final": None,
+        }
+        for coluna, prot_col in mapeamento_protocolos.items():
+            with st.expander(coluna):
+                tab_dados = diagnostico_tabela(df, coluna, protocolo_col=prot_col)
+                c1, c2 = st.columns([1, 1])
+                c1.dataframe(tab_dados, use_container_width=True, hide_index=True)
+                fig = pie_figure(tab_dados["N"], tab_dados["Diagnóstico"], coluna)
+                c2.pyplot(fig, use_container_width=True)
+                plt.close(fig)
+
+with tab_carneiros:
+    with section_card():
+        st.markdown("### Taxa de prenhez por carneiro")
+        if carneiros_cons.empty:
+            st.info("Nenhum carneiro com diagnóstico válido foi encontrado.")
+        else:
+            st.dataframe(carneiros_cons, use_container_width=True, hide_index=True)
+            fig = barh_taxa_carneiro(carneiros_cons)
+            st.pyplot(fig, use_container_width=True)
             plt.close(fig)
     st.markdown('</div>', unsafe_allow_html=True)
 
-with tab_carneiros:
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("### Taxa de prenhez por carneiro")
-    if carneiros_cons.empty:
-        st.info("Nenhum carneiro com diagnóstico válido foi encontrado.")
-    else:
-        st.dataframe(carneiros_cons, use_container_width=True, hide_index=True)
-        fig = barh_taxa_carneiro(carneiros_cons)
-        st.pyplot(fig, use_container_width=True)
-        plt.close(fig)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("### Uso de cada carneiro por monta")
-    fig_uso = barras_agrupadas_carneiros_monta()
-    st.pyplot(fig_uso, use_container_width=True)
-    plt.close(fig_uso)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with section_card():
+        st.markdown("### Uso de cada carneiro por monta")
+        nomes_carneiros, contagens_carneiros = contagem_uso_carneiros(df)
+        fig_uso = barras_agrupadas_carneiros_monta(nomes_carneiros, contagens_carneiros)
+        st.pyplot(fig_uso, use_container_width=True)
+        plt.close(fig_uso)
 
 with tab_vazios:
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown(f"### ⚠️ {len(vazios):,} animais permaneceram vazios ao final")
-    st.dataframe(vazios, use_container_width=True, hide_index=True)
-    st.markdown("#### Lista simplificada")
-    st.dataframe(vazios_resumida, use_container_width=True, hide_index=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    with section_card():
+        st.markdown(f"### ⚠️ {len(vazios):,} animais permaneceram vazios ao final")
+        st.dataframe(vazios, use_container_width=True, hide_index=True)
+        st.markdown("#### Lista simplificada")
+        st.dataframe(vazios_resumida, use_container_width=True, hide_index=True)
 
 with tab_export:
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    st.markdown("### Exportar resultados")
-    st.write("Baixe os resultados consolidados em Excel ou o relatório completo em PDF.")
+    with section_card():
+        st.markdown("### Exportar resultados")
+        st.write("Baixe os resultados consolidados em Excel ou o relatório completo em PDF.")
 
-    excel_buffer = io.BytesIO()
-    with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
-        t_estacoes.to_excel(writer, sheet_name="Resumo Estações", index=False)
-        resumo_final.to_excel(writer, sheet_name="Diagnostico Final", index=False)
-        carneiros_cons.to_excel(writer, sheet_name="Carneiros", index=False)
-        vazios.to_excel(writer, sheet_name="Animais Vazios", index=False)
-    excel_buffer.seek(0)
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine="openpyxl") as writer:
+            t_estacoes.to_excel(writer, sheet_name="Resumo Estações", index=False)
+            resumo_final.to_excel(writer, sheet_name="Diagnostico Final", index=False)
+            carneiros_cons.to_excel(writer, sheet_name="Carneiros", index=False)
+            vazios.to_excel(writer, sheet_name="Animais Vazios", index=False)
+        excel_buffer.seek(0)
 
-    ce1, ce2 = st.columns(2)
-    with ce1:
-        st.download_button(
-            "📊 Baixar resultados em Excel",
-            data=excel_buffer.getvalue(),
-            file_name="Resultados_Analise_Reprodutiva_Ovinos.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-        )
-    with ce2:
-        with st.spinner("Gerando relatório em PDF..."):
-            pdf_bytes = gerar_pdf(df, dados)
-        st.download_button(
-            "📄 Baixar relatório final em PDF",
-            data=pdf_bytes,
-            file_name="Relatorio_Analise_Reprodutiva_Ovinos.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-        )
-    st.markdown('</div>', unsafe_allow_html=True)
+        ce1, ce2 = st.columns(2)
+        with ce1:
+            st.download_button(
+                "📊 Baixar resultados em Excel",
+                data=excel_buffer.getvalue(),
+                file_name="Resultados_Analise_Reprodutiva_Ovinos.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )
+        with ce2:
+            try:
+                with st.spinner("Gerando relatório em PDF..."):
+                    pdf_bytes = gerar_pdf(df, dados)
+                st.download_button(
+                    "📄 Baixar relatório final em PDF",
+                    data=pdf_bytes,
+                    file_name="Relatorio_Analise_Reprodutiva_Ovinos.pdf",
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+            except Exception as e:
+                st.error(f"❌ Não foi possível gerar o relatório em PDF: {e}")
 
 st.markdown(
     f"<p style='text-align:center; color:{COR_NEUTRA_1}; font-size:0.85rem; margin-top:2rem;'>"
