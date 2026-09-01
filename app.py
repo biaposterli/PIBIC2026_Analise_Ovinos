@@ -28,19 +28,21 @@ st.set_page_config(
 )
 
 # ── Paleta de cores institucional ───────────────────────────────────────
-# Paleta "caderno de campo": tons de pastagem e terra, com dourado de
-# etiqueta de identificação animal como acento — evita o par clichê
-# creme + terracota comum em interfaces geradas por IA.
-COR_PRIMARIA      = "#1E3A2F"   # verde-tinta profundo (identidade)
-COR_PRIMARIA_CLARA= "#4B7A5E"   # verde musgo
-COR_SECUNDARIA    = "#A9C2AC"   # verde salva claro
-COR_DESTAQUE      = "#C08A2E"   # dourado de etiqueta (acento)
-COR_ALERTA        = "#9C4A2E"   # argila escura (vazias)
-COR_NEUTRA_1      = "#57645B"   # cinza-ardósia esverdeado
-COR_NEUTRA_2      = "#D8DCD3"   # cinza-pedra claro (linhas/bordas)
-COR_FUNDO         = "#F1F3EE"   # fundo geral (pedra clara)
+# Identidade "pastagem tecnológica": verde-esmeralda profundo como cor de
+# marca, dourado de etiqueta de identificação animal como acento — uma
+# leitura mais saturada e contemporânea do tema agropecuário, evitando o
+# par clichê creme + terracota comum em interfaces geradas por IA.
+COR_PRIMARIA      = "#0E4335"   # verde-esmeralda profundo (identidade/marca)
+COR_PRIMARIA_ESCURA = "#082A21" # verde quase-preto (gradientes, hover)
+COR_PRIMARIA_CLARA= "#2F9370"   # verde esmeralda vivo (dados positivos)
+COR_SECUNDARIA    = "#E4F1EA"   # verde menta claríssimo (chips/fundos suaves)
+COR_DESTAQUE      = "#D19A34"   # dourado de etiqueta (acento)
+COR_ALERTA        = "#C24A32"   # terracota vivo (vazias/alertas)
+COR_NEUTRA_1      = "#5B6B64"   # cinza-ardósia esverdeado (texto secundário)
+COR_NEUTRA_2      = "#E1E6E1"   # cinza-pedra claro (linhas/bordas)
+COR_FUNDO         = "#F4F6F4"   # fundo geral (pedra clara)
 COR_CARD          = "#FFFFFF"
-COR_TEXTO         = "#16211B"   # tinta quase preta
+COR_TEXTO         = "#101915"   # tinta quase preta
 
 PALETA_CATEGORICA = [COR_PRIMARIA_CLARA, COR_ALERTA, COR_DESTAQUE, COR_NEUTRA_1, COR_SECUNDARIA, COR_NEUTRA_2]
 
@@ -74,19 +76,23 @@ def estilo_matplotlib():
         "figure.facecolor": "white",
         "axes.facecolor": "white",
         "axes.edgecolor": COR_NEUTRA_2,
-        "axes.labelcolor": COR_TEXTO,
+        "axes.labelcolor": COR_NEUTRA_1,
         "axes.titleweight": "bold",
-        "axes.titlesize": 12,
-        "axes.titlecolor": COR_PRIMARIA,
+        "axes.titlesize": 12.5,
+        "axes.titlecolor": COR_TEXTO,
+        "axes.titlepad": 14,
+        "axes.linewidth": 0.9,
         "text.color": COR_TEXTO,
-        "xtick.color": COR_TEXTO,
-        "ytick.color": COR_TEXTO,
+        "xtick.color": COR_NEUTRA_1,
+        "ytick.color": COR_NEUTRA_1,
         "font.size": 10,
         "axes.spines.top": False,
         "axes.spines.right": False,
+        "axes.spines.left": False,
         "grid.color": COR_NEUTRA_2,
-        "grid.linewidth": 0.8,
+        "grid.linewidth": 0.9,
         "font.family": "sans-serif",
+        "font.sans-serif": ["Manrope", "IBM Plex Sans", "DejaVu Sans", "Arial"],
     })
 
 
@@ -97,144 +103,269 @@ estilo_matplotlib()
 # ══════════════════════════════════════════════════════════════════════════
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,600;1,6..72,500;1,6..72,600&family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
     html, body, [class*="css"] {{
-        font-family: 'IBM Plex Sans', sans-serif;
+        font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
     }}
 
     .stApp {{
-        background-color: {COR_FUNDO};
+        background:
+            radial-gradient(1100px 420px at 12% -8%, {COR_SECUNDARIA}55, transparent 60%),
+            {COR_FUNDO};
     }}
     .block-container {{
-        padding-top: 2.2rem;
+        padding-top: 1.6rem;
         padding-bottom: 3rem;
-        max-width: 1180px;
+        max-width: 1200px;
     }}
 
-    /* ── Masthead — folha de rosto do relatório, ecoa a capa do PDF ── */
+    /* ── Masthead — hero em cartão com gradiente, assinatura visual do app ── */
     .masthead {{
-        padding: 0.4rem 0 1.6rem 0;
-        margin-bottom: 1.8rem;
-        border-bottom: 2px solid {COR_PRIMARIA};
+        position: relative;
+        overflow: hidden;
+        padding: 2.1rem 2.4rem;
+        margin-bottom: 1.9rem;
+        border-radius: 18px;
+        background: linear-gradient(135deg, {COR_PRIMARIA_ESCURA} 0%, {COR_PRIMARIA} 62%, {COR_PRIMARIA_CLARA} 130%);
+        box-shadow: 0 14px 34px -14px {COR_PRIMARIA_ESCURA}99;
+    }}
+    .masthead::after {{
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(420px 240px at 96% 8%, {COR_DESTAQUE}3d, transparent 70%);
+        pointer-events: none;
+    }}
+    .masthead .eyebrow {{
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-family: 'Manrope', sans-serif;
+        font-weight: 700;
+        font-size: 0.74rem;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: {COR_DESTAQUE};
+        background: #ffffff14;
+        border: 1px solid #ffffff26;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        margin-bottom: 0.9rem;
     }}
     .masthead h1 {{
-        font-family: 'Newsreader', serif;
-        font-weight: 600;
+        font-family: 'Newsreader', serif !important;
+        font-weight: 600 !important;
         font-style: italic;
-        color: {COR_TEXTO};
-        font-size: 2.4rem;
+        color: #FFFFFF !important;
+        font-size: 2.35rem;
         line-height: 1.15;
-        margin: 0 0 0.5rem 0;
+        margin: 0 0 0.55rem 0;
+        position: relative;
     }}
     .masthead p {{
-        color: {COR_NEUTRA_1};
-        font-size: 1.02rem;
-        max-width: 46rem;
+        color: #E7EFEA;
+        font-size: 1.01rem;
+        max-width: 42rem;
         margin: 0;
+        position: relative;
+        line-height: 1.5;
     }}
 
-    /* ── Tira de indicadores (substitui cartões repetidos) ── */
-    .kpi-strip {{
-        display: flex;
-        flex-wrap: wrap;
+    /* ── Grade de indicadores ── */
+    .kpi-grid {{
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.9rem;
+        margin-bottom: 2rem;
+    }}
+    @media (max-width: 900px) {{
+        .kpi-grid {{ grid-template-columns: repeat(2, 1fr); }}
+    }}
+    .kpi-card {{
+        position: relative;
         background: {COR_CARD};
         border: 1px solid {COR_NEUTRA_2};
-        border-radius: 4px;
-        margin-bottom: 1.8rem;
-        overflow: hidden;
+        border-radius: 14px;
+        padding: 1.1rem 1.25rem 1rem;
+        box-shadow: 0 1px 2px #10191508, 0 10px 24px -18px #10191530;
+        transition: transform 0.16s ease, box-shadow 0.16s ease;
     }}
-    .kpi-item {{
-        flex: 1 1 0;
-        min-width: 9rem;
-        padding: 1rem 1.3rem;
-        border-right: 1px solid {COR_NEUTRA_2};
+    .kpi-card:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 10px 22px -12px #10191533;
     }}
-    .kpi-item:last-child {{ border-right: none; }}
+    .kpi-card::before {{
+        content: "";
+        position: absolute;
+        left: 0; top: 0.9rem; bottom: 0.9rem;
+        width: 3px;
+        border-radius: 0 3px 3px 0;
+        background: {COR_PRIMARIA_CLARA};
+    }}
+    .kpi-card.kpi-alert::before {{ background: {COR_ALERTA}; }}
+    .kpi-top {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.55rem;
+    }}
+    .kpi-icon {{
+        font-size: 1.05rem;
+        width: 2rem;
+        height: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: {COR_SECUNDARIA};
+    }}
+    .kpi-card.kpi-alert .kpi-icon {{ background: {COR_ALERTA}1f; }}
     .kpi-label {{
         display: block;
-        font-size: 0.82rem;
+        font-size: 0.8rem;
+        font-weight: 600;
         color: {COR_NEUTRA_1};
-        margin-bottom: 0.3rem;
     }}
     .kpi-value {{
         display: block;
         font-family: 'IBM Plex Mono', monospace;
         font-weight: 600;
-        font-size: 1.85rem;
+        font-size: 1.95rem;
+        letter-spacing: -0.01em;
         color: {COR_PRIMARIA};
     }}
-    .kpi-item.kpi-alert .kpi-value {{ color: {COR_ALERTA}; }}
+    .kpi-card.kpi-alert .kpi-value {{ color: {COR_ALERTA}; }}
 
-    /* ── Seções: friso superior no lugar de caixa com sombra ── */
-    .section-card {{
-        border-top: 2px solid {COR_DESTAQUE};
-        padding: 0.5rem 0 1.4rem 0;
-        margin-bottom: 1.3rem;
+    /* ── Seções: cartão elevado com cabeçalho com ícone ──
+       (o wrapper real é um st.container(key=...), que o Streamlit marca
+       com uma classe "st-key-sec-*" no bloco vertical interno) */
+    div[class*="st-key-sec-"] {{
+        background: {COR_CARD};
+        border: 1px solid {COR_NEUTRA_2};
+        border-radius: 16px;
+        padding: 1.5rem 1.6rem 1.6rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 1px 2px #10191508, 0 14px 30px -22px #10191530;
+    }}
+    .section-header {{
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        margin-bottom: 1rem;
+    }}
+    .section-header .icon-badge {{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: 9px;
+        background: {COR_SECUNDARIA};
+        font-size: 1.08rem;
+        flex-shrink: 0;
+    }}
+    .section-header h3 {{
+        margin: 0 !important;
+    }}
+    .section-header .section-sub {{
+        display: block;
+        font-size: 0.84rem;
+        font-weight: 500;
+        color: {COR_NEUTRA_1};
+        margin-top: 0.1rem;
     }}
 
-    h2, h3 {{
-        font-family: 'Newsreader', serif;
+    h1, h2, h3, h4 {{
+        font-family: 'Manrope', sans-serif;
         color: {COR_TEXTO} !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.01em;
     }}
     h3 {{
-        font-size: 1.28rem !important;
-        margin-top: 0.1rem !important;
-        margin-bottom: 0.9rem !important;
+        font-size: 1.15rem !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
     }}
 
     /* ── Botões ── */
     .stButton>button, .stDownloadButton>button {{
-        background-color: {COR_PRIMARIA};
+        background: linear-gradient(135deg, {COR_PRIMARIA} 0%, {COR_PRIMARIA_ESCURA} 100%);
         color: white;
         border: none;
-        border-radius: 4px;
-        font-weight: 500;
-        padding: 0.55rem 1.1rem;
-        transition: background-color 0.15s ease-in-out;
+        border-radius: 9px;
+        font-weight: 600;
+        padding: 0.6rem 1.15rem;
+        box-shadow: 0 6px 16px -8px {COR_PRIMARIA}80;
+        transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease-in-out;
     }}
     .stButton>button:hover, .stDownloadButton>button:hover {{
-        background-color: {COR_PRIMARIA_CLARA};
+        background: linear-gradient(135deg, {COR_PRIMARIA_CLARA} 0%, {COR_PRIMARIA} 100%);
         color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 10px 20px -8px {COR_PRIMARIA}90;
+    }}
+    .stButton>button:active, .stDownloadButton>button:active {{
+        transform: translateY(0);
     }}
     .stButton>button:focus-visible, .stDownloadButton>button:focus-visible {{
         outline: 2px solid {COR_DESTAQUE};
         outline-offset: 2px;
     }}
 
-    /* ── Abas ── */
+    /* ── Abas — estilo segmentado/pílula ── */
     .stTabs [data-baseweb="tab-list"] {{
-        gap: 1.6rem;
-        border-bottom: 1px solid {COR_NEUTRA_2};
+        gap: 0.3rem;
+        border-bottom: none;
+        background: {COR_CARD};
+        border: 1px solid {COR_NEUTRA_2};
+        border-radius: 12px;
+        padding: 0.3rem;
+        margin-bottom: 0.4rem;
     }}
     .stTabs [data-baseweb="tab"] {{
         background-color: transparent;
-        padding: 0.5rem 0.1rem;
+        padding: 0.5rem 1rem;
         color: {COR_NEUTRA_1};
-        font-weight: 500;
+        font-weight: 600;
+        border-radius: 9px;
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }}
+    .stTabs [data-baseweb="tab"]:hover {{
+        background-color: {COR_SECUNDARIA};
+        color: {COR_PRIMARIA};
     }}
     .stTabs [aria-selected="true"] {{
-        color: {COR_PRIMARIA} !important;
-        border-bottom: 2px solid {COR_DESTAQUE};
-        font-weight: 600;
+        color: #FFFFFF !important;
+        background: {COR_PRIMARIA};
+        font-weight: 700;
     }}
+    .stTabs [aria-selected="true"]:hover {{
+        color: #FFFFFF !important;
+        background: {COR_PRIMARIA};
+    }}
+    .stTabs [data-baseweb="tab-highlight"] {{ display: none; }}
     .stTabs [data-baseweb="tab-panel"] {{
-        padding-top: 0.6rem;
+        padding-top: 1rem;
     }}
 
     /* ── Expanders ── */
     .streamlit-expanderHeader {{
-        background-color: transparent;
-        border-bottom: 1px solid {COR_NEUTRA_2};
-        border-radius: 0;
-        font-weight: 500;
+        background-color: {COR_FUNDO};
+        border: 1px solid {COR_NEUTRA_2};
+        border-radius: 10px !important;
+        font-weight: 600;
         color: {COR_TEXTO};
+    }}
+    .streamlit-expanderContent {{
+        border: 1px solid {COR_NEUTRA_2};
+        border-top: none;
+        border-radius: 0 0 10px 10px;
     }}
 
     /* ── Dataframes ── */
     div[data-testid="stDataFrame"] {{
-        border-radius: 4px;
+        border-radius: 10px;
         overflow: hidden;
         border: 1px solid {COR_NEUTRA_2};
     }}
@@ -244,20 +375,67 @@ st.markdown(f"""
         background-color: #FFFFFF;
         border-right: 1px solid {COR_NEUTRA_2};
     }}
+    section[data-testid="stSidebar"] .block-container {{
+        padding-top: 1.6rem;
+    }}
     section[data-testid="stSidebar"] h2 {{
-        font-family: 'Newsreader', serif;
-        font-size: 1.15rem !important;
+        font-family: 'Manrope', sans-serif;
+        font-size: 1.02rem !important;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: {COR_PRIMARIA} !important;
+    }}
+    .sidebar-step {{
+        display: flex;
+        gap: 0.6rem;
+        align-items: flex-start;
+        margin: 0.9rem 0 0.5rem;
+    }}
+    .sidebar-step .step-num {{
+        flex-shrink: 0;
+        width: 1.5rem;
+        height: 1.5rem;
+        border-radius: 999px;
+        background: {COR_PRIMARIA};
+        color: #fff;
+        font-size: 0.76rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }}
+    .sidebar-step .step-text {{
+        font-size: 0.88rem;
+        color: {COR_TEXTO};
+        font-weight: 600;
+        line-height: 1.4;
+        padding-top: 0.1rem;
+    }}
+    [data-testid="stFileUploaderDropzone"] {{
+        border-radius: 10px !important;
+        border: 1.5px dashed {COR_NEUTRA_2} !important;
+        background: {COR_FUNDO} !important;
     }}
 
     /* Alertas */
     div[data-testid="stAlert"] {{
-        border-radius: 4px;
+        border-radius: 10px;
+        border: 1px solid {COR_NEUTRA_2};
     }}
 
     /* Foco visível para navegação por teclado */
     a:focus-visible, button:focus-visible, [tabindex]:focus-visible {{
         outline: 2px solid {COR_DESTAQUE};
         outline-offset: 2px;
+    }}
+
+    .app-footer {{
+        text-align: center;
+        color: {COR_NEUTRA_1};
+        font-size: 0.85rem;
+        margin-top: 2.2rem;
+        padding-top: 1.2rem;
+        border-top: 1px solid {COR_NEUTRA_2};
     }}
 
     footer {{visibility: hidden;}}
@@ -267,15 +445,37 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
+_contador_secoes = 0
+
+
 @contextmanager
 def section_card():
-    """Envolve um bloco de conteúdo no cartão de seção estilizado, evitando
-    repetir os mesmos dois `st.markdown` em cada trecho da interface."""
-    st.markdown('<div class="section-card">', unsafe_allow_html=True)
-    try:
+    """Envolve um bloco de conteúdo em um cartão de seção estilizado.
+
+    Usa `st.container(key=...)` (em vez de abrir/fechar uma <div> via dois
+    `st.markdown` separados) porque o Streamlit renderiza cada chamada de
+    `st.markdown` como um nó isolado no DOM — a tag HTML não chega a
+    "envolver" de fato os widgets nativos (tabelas, gráficos) inseridos
+    entre elas. O container real recebe a classe `st-key-sec-N`, usada
+    pelo CSS para aplicar o visual de cartão.
+    """
+    global _contador_secoes
+    _contador_secoes += 1
+    with st.container(key=f"sec-{_contador_secoes}"):
         yield
-    finally:
-        st.markdown('</div>', unsafe_allow_html=True)
+
+
+def titulo_secao(icone, titulo, subtitulo=None):
+    """Renderiza o cabeçalho padrão de uma seção: badge de ícone + título
+    (+ subtítulo opcional), no lugar de um `st.markdown('### ...')` isolado."""
+    sub_html = f'<span class="section-sub">{subtitulo}</span>' if subtitulo else ""
+    st.markdown(
+        f'<div class="section-header">'
+        f'<span class="icon-badge">{icone}</span>'
+        f'<div><h3>{titulo}</h3>{sub_html}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
 COLUNAS_OBRIGATORIAS = [
     "Ordem",
@@ -508,7 +708,7 @@ def barras_agrupadas_carneiros_monta(nomes, contagens):
     x = np.arange(len(nomes))
     n_estacoes = len(ESTACOES)
     width = 0.8 / n_estacoes
-    cores_monta = ["#1f77b4", "#2ca02c", "#d62728"]
+    cores_monta = [COR_PRIMARIA, COR_PRIMARIA_CLARA, COR_DESTAQUE]
 
     fig, ax = plt.subplots(figsize=(max(9, len(nomes) * 1.1), 5))
 
@@ -694,6 +894,7 @@ def gerar_pdf(df, dados):
 # ══════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="masthead">
+    <span class="eyebrow">🐑 &nbsp;IATF · Painel de Desempenho Reprodutivo</span>
     <h1>Análise Reprodutiva de Ovinos</h1>
     <p>Envie a planilha preenchida para obter indicadores, gráficos e o relatório final em PDF.</p>
 </div>
@@ -704,7 +905,12 @@ st.markdown("""
 # ══════════════════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown("## 📁 Dados de Entrada")
-    st.markdown("**Passo 1 —** baixe o modelo (se ainda não tiver).")
+
+    st.markdown(
+        '<div class="sidebar-step"><span class="step-num">1</span>'
+        '<span class="step-text">Baixe o modelo (se ainda não tiver)</span></div>',
+        unsafe_allow_html=True,
+    )
     if MODEL_PATH.exists():
         st.download_button(
             "📥 Baixar modelo da planilha",
@@ -716,7 +922,11 @@ with st.sidebar:
     else:
         st.info("Modelo não encontrado no servidor.")
 
-    st.markdown("**Passo 2 —** envie a planilha preenchida.")
+    st.markdown(
+        '<div class="sidebar-step"><span class="step-num">2</span>'
+        '<span class="step-text">Envie a planilha preenchida</span></div>',
+        unsafe_allow_html=True,
+    )
     uploaded = st.file_uploader(
         "Planilha preenchida",
         type=["xlsx", "xls"],
@@ -793,17 +1003,18 @@ def _fmt_int(n):
 
 
 kpis = [
-    ("Animais analisados", _fmt_int(len(df)), False),
-    ("Carneiros distintos", _fmt_int(len(todos_carneiros)), False),
-    ("Prenhez final", f"{taxa_final:.1f}%", False),
-    ("Vazias ao final", _fmt_int(n_vazias_final), n_vazias_final > 0),
+    ("🐑", "Animais analisados", _fmt_int(len(df)), False),
+    ("🏷️", "Carneiros distintos", _fmt_int(len(todos_carneiros)), False),
+    ("📈", "Prenhez final", f"{taxa_final:.1f}%", False),
+    ("⚠️", "Vazias ao final", _fmt_int(n_vazias_final), n_vazias_final > 0),
 ]
-kpi_html = '<div class="kpi-strip">' + "".join(
-    f'<div class="kpi-item{" kpi-alert" if alerta else ""}">'
+kpi_html = '<div class="kpi-grid">' + "".join(
+    f'<div class="kpi-card{" kpi-alert" if alerta else ""}">'
+    f'<div class="kpi-top"><span class="kpi-icon">{icone}</span></div>'
     f'<span class="kpi-label">{label}</span>'
     f'<span class="kpi-value">{valor}</span>'
     f'</div>'
-    for label, valor, alerta in kpis
+    for icone, label, valor, alerta in kpis
 ) + '</div>'
 st.markdown(kpi_html, unsafe_allow_html=True)
 
@@ -817,14 +1028,14 @@ tab_geral, tab_diag, tab_carneiros, tab_vazios, tab_export = st.tabs(
 
 with tab_geral:
     with section_card():
-        st.markdown("### Taxa de prenhez por Estação de Monta")
+        titulo_secao("📈", "Taxa de prenhez por Estação de Monta")
         st.dataframe(t_estacoes, use_container_width=True, hide_index=True)
         fig = barras_taxa_estacao(t_estacoes)
         st.pyplot(fig, use_container_width=True)
         plt.close(fig)
 
     with section_card():
-        st.markdown("### Prenhe × Vazia por Estação de Monta")
+        titulo_secao("🥧", "Prenhe × Vazia por Estação de Monta")
         cols = st.columns(3)
         for idx, estacao in enumerate(ESTACOES):
             row = t_estacoes.iloc[idx]
@@ -833,7 +1044,7 @@ with tab_geral:
             plt.close(fig)
 
     with section_card():
-        st.markdown("### Diagnóstico de gestação final")
+        titulo_secao("🩺", "Diagnóstico de gestação final")
         st.dataframe(resumo_final, use_container_width=True, hide_index=True)
         fig = pie_figure(resumo_final["N"], resumo_final["Resultado"], "Diagnóstico de gestação final")
         st.pyplot(fig, use_container_width=True)
@@ -841,7 +1052,7 @@ with tab_geral:
 
 with tab_diag:
     with section_card():
-        st.markdown("### Diagnósticos de gestação por etapa")
+        titulo_secao("🩺", "Diagnósticos de gestação por etapa")
         mapeamento_protocolos = {
             "Diagnóstico de Gestação Inicial": None,
             "Diagnóstico de Gestação 1": "Estação de monta 1",
@@ -860,7 +1071,7 @@ with tab_diag:
 
 with tab_carneiros:
     with section_card():
-        st.markdown("### Taxa de prenhez por carneiro")
+        titulo_secao("🐏", "Taxa de prenhez por carneiro")
         if carneiros_cons.empty:
             st.info("Nenhum carneiro com diagnóstico válido foi encontrado.")
         else:
@@ -868,10 +1079,9 @@ with tab_carneiros:
             fig = barh_taxa_carneiro(carneiros_cons)
             st.pyplot(fig, use_container_width=True)
             plt.close(fig)
-    st.markdown('</div>', unsafe_allow_html=True)
 
     with section_card():
-        st.markdown("### Uso de cada carneiro por monta")
+        titulo_secao("📊", "Uso de cada carneiro por monta")
         nomes_carneiros, contagens_carneiros = contagem_uso_carneiros(df)
         fig_uso = barras_agrupadas_carneiros_monta(nomes_carneiros, contagens_carneiros)
         st.pyplot(fig_uso, use_container_width=True)
@@ -879,14 +1089,14 @@ with tab_carneiros:
 
 with tab_vazios:
     with section_card():
-        st.markdown(f"### ⚠️ {len(vazios):,} animais permaneceram vazios ao final")
+        titulo_secao("⚠️", f"{len(vazios):,} animais permaneceram vazios ao final".replace(",", "."))
         st.dataframe(vazios, use_container_width=True, hide_index=True)
         st.markdown("#### Lista simplificada")
         st.dataframe(vazios_resumida, use_container_width=True, hide_index=True)
 
 with tab_export:
     with section_card():
-        st.markdown("### Exportar resultados")
+        titulo_secao("📥", "Exportar resultados")
         st.write("Baixe os resultados consolidados em Excel ou o relatório completo em PDF.")
 
         excel_buffer = io.BytesIO()
@@ -921,8 +1131,7 @@ with tab_export:
                 st.error(f"❌ Não foi possível gerar o relatório em PDF: {e}")
 
 st.markdown(
-    f"<p style='text-align:center; color:{COR_NEUTRA_1}; font-size:0.85rem; margin-top:2rem;'>"
-    "Sistema de Análise Reprodutiva de Ovinos — processamento baseado na estrutura da planilha-modelo."
-    "</p>",
+    '<p class="app-footer">🐑 Sistema de Análise Reprodutiva de Ovinos — '
+    'processamento baseado na estrutura da planilha-modelo.</p>',
     unsafe_allow_html=True,
 )
