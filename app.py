@@ -107,7 +107,7 @@ st.markdown(f"""
         background-color: {COR_FUNDO};
     }}
     .block-container {{
-        padding-top: 1.4rem;
+        padding-top: 2.2rem;
         padding-bottom: 3rem;
         max-width: 1180px;
     }}
@@ -120,11 +120,11 @@ st.markdown(f"""
     }}
     .masthead-tag {{
         display: inline-block;
-        font-family: 'IBM Plex Mono', monospace;
-        font-size: 0.8rem;
-        color: {COR_PRIMARIA_CLARA};
-        letter-spacing: 0.02em;
-        margin-bottom: 0.6rem;
+        font-family: 'IBM Plex Sans', sans-serif;
+        font-weight: 500;
+        font-size: 0.95rem;
+        color: {COR_PRIMARIA};
+        margin-bottom: 0.7rem;
     }}
     .masthead h1 {{
         font-family: 'Newsreader', serif;
@@ -176,9 +176,8 @@ st.markdown(f"""
 
     /* ── Seções: friso superior no lugar de caixa com sombra ── */
     .section-card {{
-        background: {COR_CARD};
         border-top: 2px solid {COR_DESTAQUE};
-        padding: 1.3rem 1.5rem 1.4rem 1.5rem;
+        padding: 1.2rem 0 1.4rem 0;
         margin-bottom: 1.3rem;
     }}
 
@@ -268,6 +267,7 @@ st.markdown(f"""
 
     footer {{visibility: hidden;}}
     #MainMenu {{visibility: hidden;}}
+    header[data-testid="stHeader"] {{visibility: hidden; height: 0;}}
 </style>
 """, unsafe_allow_html=True)
 
