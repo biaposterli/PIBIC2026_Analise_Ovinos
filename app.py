@@ -894,7 +894,7 @@ def gerar_pdf(df, dados):
 # ══════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="masthead">
-    <span class="eyebrow">🐑 &nbsp; · Painel de Desempenho Reprodutivo</span>
+    <span class="eyebrow"> &nbsp; · Painel de Desempenho Reprodutivo</span>
     <h1>Análise Reprodutiva de Ovinos</h1>
     <p>Envie a planilha preenchida para obter indicadores, gráficos e o relatório final em PDF.</p>
 </div>
