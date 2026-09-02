@@ -1,10 +1,10 @@
 import io
 from contextlib import contextmanager
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 import streamlit as st
 
 from reportlab.lib import colors as rl_colors
@@ -53,6 +53,11 @@ MAPA_CORES_FIXAS = {
     "nao informado": COR_NEUTRA_2,
 }
 
+# Colormap contínuo (dentro da identidade visual do app) usado para colorir
+# um número arbitrário de estações de monta nos gráficos de uso por carneiro.
+_CMAP_MONTAS = LinearSegmentedColormap.from_list(
+    "montas", [COR_PRIMARIA_ESCURA, COR_PRIMARIA_CLARA, COR_DESTAQUE]
+)
 
 
 def cores_para_labels(labels):
@@ -69,6 +74,17 @@ def cores_para_labels(labels):
             usados.append(cor)
             saida.append(cor)
     return saida
+
+
+def cores_para_montas(n):
+    """Gera `n` cores distintas (e determinísticas) para as estações de monta,
+    a partir de um colormap contínuo — funciona para qualquer quantidade de
+    estações, não só para um número fixo pré-definido."""
+    if n <= 0:
+        return []
+    if n == 1:
+        return [COR_PRIMARIA]
+    return [_CMAP_MONTAS(t) for t in np.linspace(0, 1, n)]
 
 
 def estilo_matplotlib():
@@ -498,29 +514,54 @@ def titulo_secao(icone, titulo, subtitulo=None):
         unsafe_allow_html=True,
     )
 
-COLUNAS_OBRIGATORIAS = [
-    "Ordem",
-    "Número de Identificação",
-    "Diagnóstico de Gestação Inicial",
-    "Estação de monta 1",
-    "Carneiro_monta_1",
-    "Diagnóstico de Gestação 1",
-    "Estação de monta 2",
-    "Carneiro_monta_2",
-    "Diagnóstico de Gestação 2",
-    "Estação de monta 3",
-    "Carneiro_monta_3",
-    "Diagnóstico de Gestação 3",
-    "Diagnóstico de Gestação Final",
-]
+# ══════════════════════════════════════════════════════════════════════════
+# ESTRUTURA DE COLUNAS — quantidade de estações de monta definida pelo usuário
+# ══════════════════════════════════════════════════════════════════════════
+# Em vez de um número fixo de estações de monta, a estrutura de colunas é
+# construída dinamicamente a partir da quantidade escolhida na barra
+# lateral (mínimo de 1, sem limite máximo).
+COLUNAS_FIXAS_INICIO = ["Ordem", "Número de Identificação", "Diagnóstico de Gestação Inicial"]
+COLUNAS_FIXAS_FIM = ["Diagnóstico de Gestação Final"]
 
-ESTACOES = [
-    {"rodada": 1, "estacao": "Estação de monta 1", "carneiro": "Carneiro_monta_1", "diagnostico": "Diagnóstico de Gestação 1"},
-    {"rodada": 2, "estacao": "Estação de monta 2", "carneiro": "Carneiro_monta_2", "diagnostico": "Diagnóstico de Gestação 2"},
-    {"rodada": 3, "estacao": "Estação de monta 3", "carneiro": "Carneiro_monta_3", "diagnostico": "Diagnóstico de Gestação 3"},
-]
 
-MODEL_PATH = Path(__file__).with_name("Modelo_Dados_Ovinos_IATF.xlsx")
+def colunas_por_monta(i):
+    return [f"Estação de monta {i}", f"Carneiro_monta_{i}", f"Diagnóstico de Gestação {i}"]
+
+
+def colunas_obrigatorias(n_montas):
+    """Monta a lista completa de colunas obrigatórias para `n_montas`
+    estações de monta."""
+    cols = list(COLUNAS_FIXAS_INICIO)
+    for i in range(1, n_montas + 1):
+        cols += colunas_por_monta(i)
+    cols += COLUNAS_FIXAS_FIM
+    return cols
+
+
+def estacoes_config(n_montas):
+    """Gera a configuração (nomes de coluna) de cada estação de monta, de 1
+    até `n_montas`."""
+    return [
+        {
+            "rodada": i,
+            "estacao": f"Estação de monta {i}",
+            "carneiro": f"Carneiro_monta_{i}",
+            "diagnostico": f"Diagnóstico de Gestação {i}",
+        }
+        for i in range(1, n_montas + 1)
+    ]
+
+
+def gerar_modelo_planilha(n_montas):
+    """Gera, em memória, o modelo de planilha (.xlsx) já com a estrutura de
+    colunas correspondente à quantidade de estações de monta escolhida."""
+    cols = colunas_obrigatorias(n_montas)
+    df_modelo = pd.DataFrame(columns=cols)
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        df_modelo.to_excel(writer, sheet_name="Dados", index=False)
+    buf.seek(0)
+    return buf.getvalue()
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -530,14 +571,14 @@ def norm(x):
     return str(x).strip().casefold()
 
 
-def validar_colunas(df):
-    return [c for c in COLUNAS_OBRIGATORIAS if c not in df.columns]
+def validar_colunas(df, n_montas):
+    return [c for c in colunas_obrigatorias(n_montas) if c not in df.columns]
 
 
 @st.cache_data(show_spinner=False)
-def resumo_estacoes(df):
+def resumo_estacoes(df, estacoes):
     linhas = []
-    for estacao in ESTACOES:
+    for estacao in estacoes:
         estacao_col = estacao["estacao"]
         diag = estacao["diagnostico"]
         mask_estacao = df[estacao_col].notna() & df[estacao_col].astype(str).str.strip().ne("")
@@ -577,10 +618,10 @@ def diagnostico_tabela(df, coluna, protocolo_col=None):
 
 
 @st.cache_data(show_spinner=False)
-def carneiros(df):
+def carneiros(df, estacoes):
     nomes = set()
     por_estacao = {}
-    for estacao in ESTACOES:
+    for estacao in estacoes:
         s = df[estacao["carneiro"]].dropna().astype(str).str.strip()
         s = s[s.ne("")]
         vals = sorted(s.unique().tolist())
@@ -619,9 +660,9 @@ def taxa_carneiro(df, estacao):
 
 
 @st.cache_data(show_spinner=False)
-def consolidado_carneiros(df):
+def consolidado_carneiros(df, estacoes):
     partes = []
-    for estacao in ESTACOES:
+    for estacao in estacoes:
         t = taxa_carneiro(df, estacao)
         if not t.empty:
             t["Estação de Monta"] = estacao["rodada"]
@@ -681,6 +722,7 @@ def barras_taxa_estacao(t_estacoes):
     for i, v in enumerate(y):
         if pd.notna(v):
             ax.text(i, v + 2, f"{v:.1f}%", ha="center", fontweight="bold", color=COR_PRIMARIA)
+    ax.tick_params(axis="x", rotation=30 if len(x) > 6 else 0)
     fig.tight_layout()
     return fig
 
@@ -701,7 +743,7 @@ def barh_taxa_carneiro(carneiros_cons):
 
 
 @st.cache_data(show_spinner=False)
-def contagem_uso_carneiros(df):
+def contagem_uso_carneiros(df, estacoes):
     """Conta quantas fêmeas cada carneiro cobriu em cada estação de monta.
 
     Retorna a lista de nomes de carneiros (ordenada) e um dicionário
@@ -709,7 +751,7 @@ def contagem_uso_carneiros(df):
     """
     contagens = {}
     nomes = set()
-    for estacao in ESTACOES:
+    for estacao in estacoes:
         s = df[estacao["carneiro"]].dropna().astype(str).str.strip()
         s = s[s.ne("")]
         contagens[estacao["rodada"]] = s.value_counts()
@@ -717,30 +759,31 @@ def contagem_uso_carneiros(df):
     return sorted(nomes), contagens
 
 
-def barras_agrupadas_carneiros_monta(nomes, contagens):
+def barras_agrupadas_carneiros_monta(nomes, contagens, estacoes):
     """Gera o gráfico de uso de cada carneiro por monta, a partir dos dados
-    reais enviados na planilha (nomes/contagens vindos de `contagem_uso_carneiros`)."""
-    if not nomes:
+    reais enviados na planilha (nomes/contagens vindos de `contagem_uso_carneiros`).
+    Funciona para qualquer quantidade de estações de monta."""
+    if not nomes or not estacoes:
         fig, ax = plt.subplots(figsize=(9, 3))
         ax.text(0.5, 0.5, "Sem dados de carneiros para exibir", ha="center", va="center", color=COR_NEUTRA_1)
         ax.axis("off")
         return fig
 
     x = np.arange(len(nomes))
-    n_estacoes = len(ESTACOES)
+    n_estacoes = len(estacoes)
     width = 0.8 / n_estacoes
-    cores_monta = [COR_PRIMARIA, COR_PRIMARIA_CLARA, COR_DESTAQUE]
+    cores_monta = cores_para_montas(n_estacoes)
 
     fig, ax = plt.subplots(figsize=(max(9, len(nomes) * 1.1), 5))
 
     valor_max = 1
-    for i, estacao in enumerate(ESTACOES):
+    for i, estacao in enumerate(estacoes):
         rodada = estacao["rodada"]
         serie = contagens.get(rodada, pd.Series(dtype=int))
         valores = [int(serie.get(nome, 0)) for nome in nomes]
         valor_max = max(valor_max, max(valores, default=0))
         offset = (i - (n_estacoes - 1) / 2) * width
-        cor = cores_monta[i % len(cores_monta)]
+        cor = cores_monta[i]
         ax.bar(x + offset, valores, width, label=f"Monta {rodada}", color=cor, edgecolor="none", zorder=3)
 
     ax.set_title("Uso de cada carneiro por monta")
@@ -748,7 +791,9 @@ def barras_agrupadas_carneiros_monta(nomes, contagens):
     ax.set_xticks(x)
     ax.set_xticklabels(nomes, rotation=30, ha="right")
     ax.set_ylim(0, valor_max * 1.2)
-    ax.legend(loc="upper right")
+    # Com muitas estações de monta, a legenda em várias colunas evita que
+    # ela ocupe uma altura excessiva do gráfico.
+    ax.legend(loc="upper right", ncol=1 if n_estacoes <= 6 else 2, fontsize=8)
     ax.grid(axis="y", zorder=0)
 
     fig.tight_layout()
@@ -815,6 +860,7 @@ def gerar_pdf(df, dados):
     styles.add(ParagraphStyle(name="Rodape", parent=styles["BodyText"], alignment=TA_LEFT,
                                textColor=rl_colors.HexColor(COR_NEUTRA_1), fontSize=8))
 
+    estacoes = dados["estacoes"]
 
     story = []
 
@@ -829,6 +875,7 @@ def gerar_pdf(df, dados):
 
     resumo_tbl = Table([
         ["Total de animais analisados", f"{len(df):,}".replace(",", ".")],
+        ["Estações de monta consideradas", f"{len(estacoes)}"],
         ["Carneiros distintos identificados", f"{len(dados['carneiros'])}"],
         ["Taxa de prenhez final", f"{dados['taxa_final']:.2f}%"],
     ], colWidths=[9*cm, 5*cm])
@@ -852,8 +899,8 @@ def gerar_pdf(df, dados):
     story.append(Spacer(1, 0.4*cm))
 
     # `zip` casa cada linha de `tabela_estacoes` com a estação correspondente
-    # em ESTACOES — mais claro e seguro do que indexar por `rodada - 1`.
-    for estacao, row in zip(ESTACOES, dados["tabela_estacoes"].to_dict("records")):
+    # em `estacoes` — mais claro e seguro do que indexar por `rodada - 1`.
+    for estacao, row in zip(estacoes, dados["tabela_estacoes"].to_dict("records")):
         fig = pie_figure(
             [row["Prenhes"], row["Vazias"]],
             ["Prenhe", "Vazia"],
@@ -915,9 +962,10 @@ def gerar_pdf(df, dados):
 # ══════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <div class="masthead">
-    <span class="eyebrow">🐑 &nbsp;IATF · Painel de Desempenho Reprodutivo</span>
+    <span class="eyebrow">🐑 &nbsp;Painel de Desempenho Reprodutivo</span>
     <h1>Análise Reprodutiva de Ovinos</h1>
-    <p>Envie a planilha preenchida para obter indicadores, gráficos e o relatório final em PDF.</p>
+    <p>Defina a quantidade de estações de monta do seu manejo, envie a planilha preenchida
+    e obtenha indicadores, gráficos e o relatório final em PDF.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -929,22 +977,35 @@ with st.sidebar:
 
     st.markdown(
         '<div class="sidebar-step"><span class="step-num">1</span>'
-        '<span class="step-text">Baixe o modelo (se ainda não tiver)</span></div>',
+        '<span class="step-text">Escolha a quantidade de estações de monta</span></div>',
         unsafe_allow_html=True,
     )
-    if MODEL_PATH.exists():
-        st.download_button(
-            "📥 Baixar modelo da planilha",
-            data=MODEL_PATH.read_bytes(),
-            file_name="Modelo_Dados_Ovinos_IATF.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-        )
-    else:
-        st.info("Modelo não encontrado no servidor.")
+    n_montas = st.number_input(
+        "Quantidade de estações de monta",
+        min_value=1,
+        value=3,
+        step=1,
+        help="Quantas estações de monta (rodadas de cobertura) o seu manejo utiliza. "
+             "Não há limite máximo — o modelo de planilha e a análise se ajustam a qualquer quantidade.",
+        label_visibility="collapsed",
+    )
+    n_montas = int(n_montas)
 
     st.markdown(
         '<div class="sidebar-step"><span class="step-num">2</span>'
+        '<span class="step-text">Baixe o modelo (se ainda não tiver)</span></div>',
+        unsafe_allow_html=True,
+    )
+    st.download_button(
+        "📥 Baixar modelo da planilha",
+        data=gerar_modelo_planilha(n_montas),
+        file_name="Modelo_Dados_Ovinos.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
+    )
+
+    st.markdown(
+        '<div class="sidebar-step"><span class="step-num">3</span>'
         '<span class="step-text">Envie a planilha preenchida</span></div>',
         unsafe_allow_html=True,
     )
@@ -956,11 +1017,12 @@ with st.sidebar:
     )
 
     with st.expander("ℹ️ Colunas obrigatórias"):
-        for c in COLUNAS_OBRIGATORIAS:
+        for c in colunas_obrigatorias(n_montas):
             st.markdown(f"- `{c}`")
 
 if uploaded is None:
-    st.info("⬅️ Baixe o modelo, preencha os dados e envie a planilha pela barra lateral para iniciar a análise.")
+    st.info("⬅️ Escolha a quantidade de estações de monta, baixe o modelo, preencha os "
+            "dados e envie a planilha pela barra lateral para iniciar a análise.")
     st.stop()
 
 try:
@@ -969,18 +1031,24 @@ except Exception as e:
     st.error(f"❌ Não foi possível ler a planilha: {e}")
     st.stop()
 
-faltantes = validar_colunas(df)
+faltantes = validar_colunas(df, n_montas)
 if faltantes:
-    st.error("❌ A planilha não possui todas as colunas obrigatórias.")
-    st.warning("Corrija exatamente as seguintes colunas:")
+    st.error(
+        f"❌ A planilha não possui todas as colunas obrigatórias para "
+        f"{n_montas} estação(ões) de monta."
+    )
+    st.warning("Corrija exatamente as seguintes colunas (ou ajuste a quantidade de "
+               "estações de monta na barra lateral):")
     for c in faltantes:
         st.write(f"- `{c}`")
     st.stop()
 
+estacoes = estacoes_config(n_montas)
+
 # ══════════════════════════════════════════════════════════════════════════
 # CÁLCULOS
 # ══════════════════════════════════════════════════════════════════════════
-t_estacoes = resumo_estacoes(df)
+t_estacoes = resumo_estacoes(df, estacoes)
 dg_final = df["Diagnóstico de Gestação Final"].map(norm)
 n_prenhes_final = int((dg_final == "prenhe").sum())
 n_vazias_final = int((dg_final == "vazia").sum())
@@ -997,14 +1065,15 @@ resumo_final = pd.DataFrame({
 })
 resumo_final["% do total"] = (resumo_final["N"] / len(df) * 100).round(2)
 
-todos_carneiros, carneiros_por_estacao = carneiros(df)
-carneiros_cons = consolidado_carneiros(df)
+todos_carneiros, carneiros_por_estacao = carneiros(df, estacoes)
+carneiros_cons = consolidado_carneiros(df, estacoes)
 
 vazios = df.loc[dg_final == "vazia"].copy()
 cols_resumidas = [c for c in ["Ordem", "Número de Identificação", "Diagnóstico de Gestação Final"] if c in vazios.columns]
 vazios_resumida = vazios[cols_resumidas].reset_index(drop=True)
 
 dados = {
+    "estacoes": estacoes,
     "tabela_estacoes": t_estacoes,
     "resumo_final": resumo_final,
     "carneiros": todos_carneiros,
@@ -1014,7 +1083,8 @@ dados = {
     "taxa_final": taxa_final,
 }
 
-st.success(f"✅ Planilha analisada com sucesso: **{len(df):,}** animais processados.")
+st.success(f"✅ Planilha analisada com sucesso: **{len(df):,}** animais processados "
+           f"em **{n_montas}** estação(ões) de monta.")
 
 # ══════════════════════════════════════════════════════════════════════════
 # KPIs — tira de indicadores no lugar de cartões repetidos
@@ -1057,11 +1127,18 @@ with tab_geral:
 
     with section_card():
         titulo_secao("🥧", "Prenhe × Vazia por Estação de Monta")
-        cols = st.columns(3)
-        for idx, estacao in enumerate(ESTACOES):
-            row = t_estacoes.iloc[idx]
+        # Grade de gráficos de pizza, um por estação de monta — organizada
+        # em blocos de até 4 colunas para acomodar qualquer quantidade de
+        # estações sem espremer os gráficos.
+        max_por_linha = 4
+        cols = None
+        for pos, estacao in enumerate(estacoes):
+            if pos % max_por_linha == 0:
+                restantes = min(max_por_linha, len(estacoes) - pos)
+                cols = st.columns(restantes)
+            row = t_estacoes.iloc[pos]
             fig = pie_figure([row["Prenhes"], row["Vazias"]], ["Prenhe", "Vazia"], f"Estação de Monta {estacao['rodada']}")
-            cols[idx].pyplot(fig, use_container_width=True)
+            cols[pos % max_por_linha].pyplot(fig, use_container_width=True)
             plt.close(fig)
 
     with section_card():
@@ -1074,13 +1151,11 @@ with tab_geral:
 with tab_diag:
     with section_card():
         titulo_secao("🩺", "Diagnósticos de gestação por etapa")
-        mapeamento_protocolos = {
-            "Diagnóstico de Gestação Inicial": None,
-            "Diagnóstico de Gestação 1": "Estação de monta 1",
-            "Diagnóstico de Gestação 2": "Estação de monta 2",
-            "Diagnóstico de Gestação 3": "Estação de monta 3",
-            "Diagnóstico de Gestação Final": None,
-        }
+        mapeamento_protocolos = {"Diagnóstico de Gestação Inicial": None}
+        for estacao in estacoes:
+            mapeamento_protocolos[estacao["diagnostico"]] = estacao["estacao"]
+        mapeamento_protocolos["Diagnóstico de Gestação Final"] = None
+
         for coluna, prot_col in mapeamento_protocolos.items():
             with st.expander(coluna):
                 tab_dados = diagnostico_tabela(df, coluna, protocolo_col=prot_col)
@@ -1103,8 +1178,8 @@ with tab_carneiros:
 
     with section_card():
         titulo_secao("📊", "Uso de cada carneiro por monta")
-        nomes_carneiros, contagens_carneiros = contagem_uso_carneiros(df)
-        fig_uso = barras_agrupadas_carneiros_monta(nomes_carneiros, contagens_carneiros)
+        nomes_carneiros, contagens_carneiros = contagem_uso_carneiros(df, estacoes)
+        fig_uso = barras_agrupadas_carneiros_monta(nomes_carneiros, contagens_carneiros, estacoes)
         st.pyplot(fig_uso, use_container_width=True)
         plt.close(fig_uso)
 
