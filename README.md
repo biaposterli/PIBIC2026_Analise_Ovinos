@@ -1,32 +1,51 @@
 # Análise Reproduutiva de Ovinos
 
-Aplicação web (Streamlit) para análise de dados reprodutivos de ovinos submetidos a protocolos de **IATF (Inseminação Artificial em Tempo Fixo)**, desenvolvida no âmbito de um projeto PIBIC.
+Aplicação web (Streamlit) para análise de dados reprodutivos de ovinos submetidos a
+protocolos de reprodução assistida com múltiplas estações de monta, desenvolvida no
+âmbito de um projeto PIBIC.
 
-O usuário envia uma planilha Excel preenchida com os dados dos animais e recebe automaticamente indicadores, gráficos e um relatório final em PDF.
+O usuário define a quantidade de estações de monta do seu manejo, envia uma planilha
+Excel preenchida com os dados dos animais e recebe automaticamente indicadores,
+gráficos e um relatório final em PDF.
 
 ## Funcionalidades
 
-- **Download do modelo de planilha** (`Modelo_Dados_Ovinos_IATF.xlsx`) para preenchimento padronizado dos dados.
-- **Upload e validação** da planilha preenchida, com checagem das colunas obrigatórias.
-- **Indicadores (KPIs)**: total de animais, número de carneiros, taxa de prenhez final e número de fêmeas vazias.
-- **Análise por estação de monta** (até 3 estações): animais submetidos, diagnósticos válidos, prenhes, vazias e taxa de prenhez, com gráficos de barras e pizza.
-- **Diagnósticos de gestação por etapa** (inicial, estações 1–3 e final), detalhados em tabelas e gráficos.
-- **Desempenho por carneiro**: taxa de prenhez individual e consolidada, e uso de cada carneiro por estação de monta.
+- **Quantidade de estações de monta configurável**: o usuário escolhe, na barra
+  lateral, quantas estações de monta (rodadas de cobertura) o seu manejo utiliza —
+  de 1 até qualquer quantidade, sem limite máximo.
+- **Download do modelo de planilha**, gerado automaticamente com a estrutura de
+  colunas correspondente à quantidade de estações escolhida.
+- **Upload e validação** da planilha preenchida, com checagem das colunas
+  obrigatórias para a quantidade de estações informada.
+- **Indicadores (KPIs)**: total de animais, número de carneiros, taxa de prenhez
+  final e número de fêmeas vazias.
+- **Análise por estação de monta** (quantas o usuário definir): animais submetidos,
+  diagnósticos válidos, prenhes, vazias e taxa de prenhez, com gráficos de barras e
+  pizza.
+- **Diagnósticos de gestação por etapa** (inicial, cada estação de monta e final),
+  detalhados em tabelas e gráficos.
+- **Desempenho por carneiro**: taxa de prenhez individual e consolidada, e uso de
+  cada carneiro por estação de monta.
 - **Lista de animais vazios** ao final do processo reprodutivo.
 - **Exportação dos resultados** em Excel (múltiplas abas) e em relatório final em PDF.
 
 ## Estrutura de dados esperada
 
-A planilha enviada precisa conter as seguintes colunas:
+A quantidade de colunas referentes às estações de monta depende da quantidade
+escolhida pelo usuário na barra lateral do app (1, 2, 3, ... N). Para cada estação
+`i`, a planilha precisa conter:
+
+- `Estação de monta i`, `Carneiro_monta_i`, `Diagnóstico de Gestação i`
+
+Além disso, a planilha precisa conter as colunas fixas:
 
 - `Ordem`, `Número de Identificação`
 - `Diagnóstico de Gestação Inicial`
-- `Estação de monta 1`, `Carneiro_monta_1`, `Diagnóstico de Gestação 1`
-- `Estação de monta 2`, `Carneiro_monta_2`, `Diagnóstico de Gestação 2`
-- `Estação de monta 3`, `Carneiro_monta_3`, `Diagnóstico de Gestação 3`
 - `Diagnóstico de Gestação Final`
 
-O arquivo `Modelo_Dados_Ovinos_IATF.xlsx`, disponível no próprio app, já traz essa estrutura pronta para preenchimento.
+O modelo de planilha é gerado automaticamente pelo próprio app, de acordo com a
+quantidade de estações de monta escolhida na barra lateral, já trazendo a estrutura
+de colunas correspondente pronta para preenchimento.
 
 ## Tecnologias
 
@@ -54,12 +73,14 @@ A aplicação abrirá automaticamente no navegador (por padrão em `http://local
 
 ## Como usar
 
-1. Baixe o modelo de planilha disponível na barra lateral do app.
-2. Preencha os dados reprodutivos dos animais, mantendo os nomes das colunas.
-3. Envie a planilha preenchida pela barra lateral.
-4. Navegue pelas abas (Visão Geral, Diagnósticos, Carneiros, Animais Vazios, Exportar) para consultar os resultados.
-5. Baixe os resultados consolidados em Excel ou o relatório completo em PDF.
+1. Escolha, na barra lateral, a quantidade de estações de monta do seu manejo.
+2. Baixe o modelo de planilha gerado automaticamente para essa quantidade de estações.
+3. Preencha os dados reprodutivos dos animais, mantendo os nomes das colunas.
+4. Envie a planilha preenchida pela barra lateral.
+5. Navegue pelas abas (Visão Geral, Diagnósticos, Carneiros, Animais Vazios, Exportar) para consultar os resultados.
+6. Baixe os resultados consolidados em Excel ou o relatório completo em PDF.
 
 ## Contexto
 
-Projeto desenvolvido como parte do **PIBIC 2026** (Programa Institucional de Bolsas de Iniciação Científica), voltado à análise de indicadores reprodutivos em ovinocultura.
+Projeto desenvolvido como parte do **PIBIC 2026** (Programa Institucional de Bolsas de
+Iniciação Científica), voltado à análise de indicadores reprodutivos em ovinocultura.
