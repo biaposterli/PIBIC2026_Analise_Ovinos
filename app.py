@@ -1083,8 +1083,9 @@ dados = {
     "taxa_final": taxa_final,
 }
 
+_palavra_estacao = "estação" if n_montas == 1 else "estações"
 st.success(f"✅ Planilha analisada com sucesso: **{len(df):,}** animais processados "
-           f"em **{n_montas}** estação(ões) de monta.")
+           f"em **{n_montas}** {_palavra_estacao} de monta.")
 
 # ══════════════════════════════════════════════════════════════════════════
 # KPIs — tira de indicadores no lugar de cartões repetidos
